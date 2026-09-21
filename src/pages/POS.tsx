@@ -6,7 +6,7 @@ import { Loading, EmptyState } from '../components/Feedback'
 import { formatCurrency, formatNumber, nextInvoiceNumber, getDefaultUnitForCategory } from '../lib/utils'
 import { recordStockMovement, sellSlabFull, sellSlabPartial, updateCustomerTotals } from '../lib/stockOps'
 import type { Product, Customer, Slab, SaleItem } from '../lib/types'
-import { Search, ShoppingCart, Plus, Trash2, X, UserPlus, Printer, FileText } from 'lucide-react'
+import { Search, ShoppingCart, Plus, Trash2, X, UserPlus, Printer, FileText, MessageCircle } from 'lucide-react'
 
 interface CartItem {
   product_id: string
@@ -617,6 +617,35 @@ function InvoiceView({ saleId, onClose }: { saleId: string; onClose: () => void 
 
   if (loading || !sale) return <Loading label="Loading invoice..." />
 
+  const sendWhatsApp = () => {
+    const mobile = String(sale.customer_mobile ?? '').replace(/\D/g, '')
+    if (!mobile) {
+      window.alert('Customer mobile number is required to send this bill on WhatsApp.')
+      return
+    }
+    const phone = mobile.length === 10 ? `91${mobile}` : mobile
+    const itemLines = items.map((item) => {
+      const quantity = item.unit === 'Sq.Ft' ? `${formatNumber(item.sqft)} Sq.Ft` : `${formatNumber(item.quantity)} ${item.unit ?? 'Unit'}`
+      return `- ${item.description}: ${quantity} x ${formatCurrency(item.rate)} = ${formatCurrency(item.amount)}`
+    }).join('\n')
+    const message = [
+      `*${settings?.business_name ?? 'Vaishnav Marble Shop'}*`,
+      `Invoice: ${sale.invoice_number}`,
+      `Date: ${new Date(sale.sale_date).toLocaleDateString('en-IN')}`,
+      `Customer: ${sale.customer_name ?? 'Customer'}`,
+      '',
+      '*Items*',
+      itemLines,
+      '',
+      `*Grand Total: ${formatCurrency(sale.grand_total)}*`,
+      `Paid: ${formatCurrency(sale.paid_amount)}`,
+      `Due: ${formatCurrency(sale.due_amount)}`,
+      '',
+      'Thank you for shopping with us.',
+    ].join('\n')
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer')
+  }
+
   return (
     <div>
       <div className="page-header no-print">
@@ -626,6 +655,7 @@ function InvoiceView({ saleId, onClose }: { saleId: string; onClose: () => void 
         </div>
         <div className="flex gap-2">
           <button className="btn btn-secondary" onClick={() => window.print()}><Printer size={16} /> Print</button>
+          <button className="btn btn-primary" onClick={sendWhatsApp}><MessageCircle size={16} /> WhatsApp</button>
           <button className="btn btn-primary" onClick={onClose}><FileText size={16} /> New Sale</button>
         </div>
       </div>
