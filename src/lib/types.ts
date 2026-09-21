@@ -1,4 +1,4 @@
-export type InventoryType = 'slab' | 'box' | 'piece'
+export type InventoryType = 'slab' | 'box' | 'piece' | 'mixed' | 'job'
 
 export interface Category {
   id: string

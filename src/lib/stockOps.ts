@@ -25,7 +25,7 @@ export interface StockMovementInput {
 export async function recordStockMovement(input: StockMovementInput): Promise<void> {
   let balance_count = 0
   let balance_sqft = 0
-  let inventory_type: 'slab' | 'box' | 'piece' = 'piece'
+  let inventory_type: 'slab' | 'box' | 'piece' | 'mixed' | 'job' = 'piece'
 
   if (input.product_id) {
     const { data: prod } = await supabase
@@ -37,7 +37,7 @@ export async function recordStockMovement(input: StockMovementInput): Promise<vo
       balance_count = Number(prod.stock_count)
       balance_sqft = Number(prod.stock_sqft)
       const type = (prod as { category?: { inventory_type?: string } } | null)?.category?.inventory_type ?? 'piece'
-      inventory_type = type === 'slab' ? 'slab' : type === 'box' ? 'box' : 'piece'
+      inventory_type = type === 'slab' ? 'slab' : type === 'box' ? 'box' : type === 'mixed' ? 'mixed' : type === 'job' ? 'job' : 'piece'
     }
   }
 
@@ -47,7 +47,7 @@ export async function recordStockMovement(input: StockMovementInput): Promise<vo
   const out_sqft = input.stock_out_sqft ?? 0
 
   const new_balance_count = balance_count + in_count - out_count
-  const new_balance_sqft = inventory_type === 'piece' ? 0 : balance_sqft + in_sqft - out_sqft
+  const new_balance_sqft = inventory_type === 'piece' || inventory_type === 'job' ? 0 : balance_sqft + in_sqft - out_sqft
 
   await supabase.from('stock_movements').insert({
     product_id: input.product_id,
@@ -77,7 +77,7 @@ export async function recordStockMovement(input: StockMovementInput): Promise<vo
       .from('products')
       .update({
         stock_count: new_balance_count,
-        stock_sqft: inventory_type === 'piece' ? 0 : new_balance_sqft,
+        stock_sqft: inventory_type === 'piece' || inventory_type === 'job' ? 0 : new_balance_sqft,
         updated_at: new Date().toISOString(),
       })
       .eq('id', input.product_id)

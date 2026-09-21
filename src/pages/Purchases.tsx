@@ -180,7 +180,7 @@ function PurchaseForm({ products, suppliers, categories: _categories, locations:
       unit: defaultUnit,
       quantity: invType === 'box' ? boxQty : invType === 'piece' ? pieceQty : 1,
       slab_count: slabCount,
-      sqft: invType === 'box' ? (Number(product.length) || 0) * (Number(product.width) || 0) : 0,
+      sqft: invType === 'box' || invType === 'mixed' ? (Number(product.length) || 0) * (Number(product.width) || 0) : 0,
       purchase_rate: product.purchase_price,
       gst_rate: product.gst_rate,
       amount: product.purchase_price,
@@ -229,8 +229,8 @@ function PurchaseForm({ products, suppliers, categories: _categories, locations:
 
       for (const item of cart) {
         const invType = item.product.category?.inventory_type ?? 'piece'
-        const stockInCount = invType === 'piece' ? item.quantity : invType === 'box' ? item.quantity : item.slab_count
-        const stockInSqft = invType === 'box' ? (item.sqft || (item.quantity * (item.slab_length * item.slab_width || 0))) : invType === 'slab' ? (item.sqft || item.slab_count * (item.slab_length * item.slab_width || 0)) : 0
+        const stockInCount = invType === 'piece' || invType === 'box' ? item.quantity : invType === 'mixed' ? item.quantity : item.slab_count
+        const stockInSqft = invType === 'box' || invType === 'mixed' ? (item.sqft || (item.quantity * (item.slab_length * item.slab_width || 0))) : invType === 'slab' ? (item.sqft || item.slab_count * (item.slab_length * item.slab_width || 0)) : 0
 
         await supabase.from('purchase_items').insert({
           purchase_id: purchase.id,

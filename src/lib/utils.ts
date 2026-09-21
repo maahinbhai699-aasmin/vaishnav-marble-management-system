@@ -39,6 +39,9 @@ export function getInventoryType(categoryName?: string): InventoryType {
 
   if (!normalized) return 'piece'
 
+  if (normalized.includes('interior') || normalized.includes('stone product') || normalized.includes('mosaic') || normalized.includes('decorative')) return 'mixed'
+  if (normalized.includes('custom work')) return 'job'
+
   if (
     normalized.includes('marble') ||
     normalized.includes('granite') ||
@@ -58,7 +61,7 @@ export function getInventoryType(categoryName?: string): InventoryType {
 
 export function getDefaultUnitForCategory(categoryName?: string): string {
   const type = getInventoryType(categoryName)
-  if (type === 'slab') return 'Sq.Ft'
+  if (type === 'slab' || type === 'mixed') return 'Sq.Ft'
   if (type === 'box') return 'Box'
   return 'Piece'
 }
@@ -69,7 +72,7 @@ export function getInventoryStockCount(product: {
   category?: { inventory_type?: string | null; name?: string | null } | null
 }): number {
   const invType = product.category?.inventory_type ?? getInventoryType(product.category?.name ?? '')
-  if (invType === 'slab' || invType === 'box') {
+  if (invType === 'slab' || invType === 'box' || invType === 'mixed') {
     return Number(product.stock_count ?? 0)
   }
   return Number(product.stock_count ?? 0)
@@ -81,7 +84,7 @@ export function getInventoryStockArea(product: {
   category?: { inventory_type?: string | null; name?: string | null } | null
 }): number {
   const invType = product.category?.inventory_type ?? getInventoryType(product.category?.name ?? '')
-  if (invType === 'slab' || invType === 'box') {
+  if (invType === 'slab' || invType === 'box' || invType === 'mixed') {
     return Number(product.stock_sqft ?? 0)
   }
   return 0
@@ -94,7 +97,7 @@ export function getInventoryStockValue(product: {
 }, fallbackUnit?: string | null): number {
   const invType = product.category?.inventory_type ?? getInventoryType(product.category?.name ?? fallbackUnit ?? '')
 
-  if (invType === 'slab' || invType === 'box') {
+  if (invType === 'slab' || invType === 'box' || invType === 'mixed') {
     return Number(product.stock_sqft ?? 0)
   }
 
@@ -103,7 +106,7 @@ export function getInventoryStockValue(product: {
 
 export function getInventoryMetricLabel(categoryName?: string): string {
   const type = getInventoryType(categoryName)
-  if (type === 'slab') return 'Sq.Ft'
+  if (type === 'slab' || type === 'mixed') return 'Sq.Ft / Piece'
   if (type === 'box') return 'Box / Sq.Ft'
   return 'Pieces'
 }
@@ -130,7 +133,7 @@ export function slabStatusColor(status: string): string {
 
 export function stockStatus(product: { stock_count: number; stock_sqft: number; min_stock_level: number; category?: { inventory_type: string } | null }): string {
   const invType = product.category?.inventory_type
-  const stock = invType === 'slab' || invType === 'box' ? product.stock_sqft : product.stock_count
+  const stock = invType === 'slab' || invType === 'box' || invType === 'mixed' ? product.stock_sqft : product.stock_count
   if (stock <= 0) return 'out_of_stock'
   if (product.min_stock_level > 0 && stock <= product.min_stock_level) return 'low_stock'
   return 'in_stock'

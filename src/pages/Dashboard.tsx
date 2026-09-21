@@ -82,7 +82,7 @@ export function Dashboard() {
         : (products.data ?? []).reduce((s: number, p: any) => s + Number(p.stock_count), 0)
       const total_sqft = cat.inventory_type === 'slab'
         ? activeSlabs.reduce((s: number, r: any) => s + Number(r.total_sqft), 0)
-        : cat.inventory_type === 'box'
+        : cat.inventory_type === 'box' || cat.inventory_type === 'mixed'
         ? (products.data ?? []).reduce((s: number, p: any) => s + Number(p.stock_sqft), 0)
         : 0
       const available_count = cat.inventory_type === 'slab'
@@ -90,7 +90,7 @@ export function Dashboard() {
         : total_count
       const available_sqft = cat.inventory_type === 'slab'
         ? activeSlabs.reduce((s: number, r: any) => s + Number(r.remaining_sqft), 0)
-        : total_sqft
+        : cat.inventory_type === 'box' || cat.inventory_type === 'mixed' ? total_sqft : 0
       categoryStats.push({ name: cat.name, inventory_type: cat.inventory_type, total_count, total_sqft, available_count, available_sqft })
     }
 

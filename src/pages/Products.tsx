@@ -243,7 +243,9 @@ function ProductForm({ product, categories, subcategories, suppliers, locations,
   const availableUnits = useMemo(() => {
     if (invType === 'slab') return units.filter((u) => ['Sq.Ft', 'Sq.Mtr', 'Slab', 'Piece', 'Lot'].includes(u.name))
     if (invType === 'box') return units.filter((u) => ['Box', 'Sq.Ft', 'Sq.Mtr', 'Piece'].includes(u.name))
-    return units.filter((u) => u.name === 'Piece')
+    if (invType === 'mixed') return units.filter((u) => ['Sq.Ft', 'Running Ft', 'Piece', 'Set', 'Job'].includes(u.name))
+    if (invType === 'job') return units.filter((u) => ['Job', 'Sq.Ft', 'Running Ft', 'Piece', 'Custom Order'].includes(u.name))
+    return units.filter((u) => ['Piece', 'Set', 'Bag', 'Kg', 'Litre', 'Meter', 'Box'].includes(u.name))
   }, [invType, units])
 
   const set = (key: string, value: unknown) => setForm((f) => ({ ...f, [key]: value }))

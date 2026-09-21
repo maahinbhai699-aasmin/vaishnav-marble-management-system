@@ -113,7 +113,7 @@ export function POS() {
         description: product.name,
         unit,
         quantity: 1,
-        sqft: invType === 'box' ? 1 : 0,
+        sqft: invType === 'box' || invType === 'mixed' ? 1 : 0,
         rate,
         gst_rate: product.gst_rate,
         amount: rate,
@@ -244,8 +244,8 @@ export function POS() {
             }
           }
         } else {
-          const stockOutCount = invType === 'piece' ? item.quantity : invType === 'box' ? item.quantity : 0
-          const stockOutSqft = invType === 'box' ? (item.sqft || 0) : invType === 'slab' ? item.sqft : 0
+          const stockOutCount = invType === 'piece' || invType === 'box' ? item.quantity : 0
+          const stockOutSqft = invType === 'box' || invType === 'mixed' || invType === 'slab' ? (item.sqft || 0) : 0
           await recordStockMovement({
             product_id: item.product_id,
             category_id: item.product.category_id,
