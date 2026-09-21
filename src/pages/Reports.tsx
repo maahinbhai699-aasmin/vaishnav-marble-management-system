@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { Loading } from '../components/Feedback'
-import { formatCurrency, formatDate } from '../lib/utils'
+import { formatCurrency, formatDate, formatNumber } from '../lib/utils'
 import { TrendingUp, TrendingDown, Wallet, DollarSign, Package, Users, Truck } from 'lucide-react'
 
 export function Reports() {
