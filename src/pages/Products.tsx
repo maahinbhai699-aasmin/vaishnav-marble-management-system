@@ -4,6 +4,7 @@ import { useProducts, useCategories, useSubcategories, useSuppliers, useLocation
 import { useToast } from '../components/AppShell'
 import { Modal } from '../components/Modal'
 import { Loading, EmptyState, ConfirmDialog } from '../components/Feedback'
+import { Pagination } from '../components/Pagination'
 import { formatCurrency, formatNumber, stockStatus, stockStatusLabel, stockStatusColor, getInventoryType } from '../lib/utils'
 import { recordStockMovement } from '../lib/stockOps'
 import type { Product, Category, Unit } from '../lib/types'
@@ -24,6 +25,8 @@ export function Products() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Product | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const pageSize = 20
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -37,6 +40,7 @@ export function Products() {
       return matchSearch && matchCat && matchStock
     })
   }, [products, search, categoryFilter, stockFilter])
+  const visibleProducts = filtered.slice((page - 1) * pageSize, page * pageSize)
 
   const handleSave = async (formData: Partial<Product>, selectedUnits: string[], openingStock: { count: number; sqft: number; unit: string }) => {
     if (editing) {
@@ -149,7 +153,7 @@ export function Products() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p) => {
+              {visibleProducts.map((p) => {
                 const invType = p.category?.inventory_type ?? 'piece'
                 const stockDisplay = invType === 'slab' ? `${formatNumber(p.stock_count)} slabs / ${formatNumber(p.stock_sqft)} Sq.Ft` : invType === 'box' ? `${formatNumber(p.stock_count)} boxes` : `${formatNumber(p.stock_count)} pcs`
                 return (
@@ -172,6 +176,7 @@ export function Products() {
               })}
             </tbody>
           </table>
+          <Pagination page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} />
         </div>
       )}
 

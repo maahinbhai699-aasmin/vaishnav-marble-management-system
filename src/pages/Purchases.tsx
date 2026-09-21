@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useToast } from '../components/AppShell'
 import { Modal } from '../components/Modal'
 import { Loading, EmptyState, ConfirmDialog } from '../components/Feedback'
+import { Pagination } from '../components/Pagination'
 import { formatCurrency, formatDate, nextInvoiceNumber, getDefaultUnitForCategory } from '../lib/utils'
 import { recordStockMovement, createSlabFromPurchase, updateSupplierTotals } from '../lib/stockOps'
 import type { Purchase, PurchaseItem, Product, Supplier, Category, Location } from '../lib/types'
@@ -36,6 +37,8 @@ export function Purchases() {
   const [viewPurchase, setViewPurchase] = useState<Purchase | null>(null)
   const [viewItems, setViewItems] = useState<PurchaseItem[]>([])
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const pageSize = 20
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -61,6 +64,7 @@ export function Purchases() {
     const q = search.toLowerCase()
     return purchases.filter((p) => p.invoice_number.toLowerCase().includes(q) || (p.supplier?.name ?? '').toLowerCase().includes(q))
   }, [purchases, search])
+  const visiblePurchases = filtered.slice((page - 1) * pageSize, page * pageSize)
 
   const handleView = async (purchase: Purchase) => {
     setViewPurchase(purchase)
@@ -111,7 +115,7 @@ export function Purchases() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p) => (
+              {visiblePurchases.map((p) => (
                 <tr key={p.id}>
                   <td className="font-semibold">{p.invoice_number}</td>
                   <td>{formatDate(p.purchase_date)}</td>
@@ -130,6 +134,7 @@ export function Purchases() {
               ))}
             </tbody>
           </table>
+          <Pagination page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} />
         </div>
       )}
 

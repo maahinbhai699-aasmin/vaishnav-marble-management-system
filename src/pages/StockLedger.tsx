@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { Loading, EmptyState } from '../components/Feedback'
+import { Pagination } from '../components/Pagination'
 import { formatNumber, formatDate } from '../lib/utils'
 import type { StockMovement } from '../lib/types'
 import { Search, FileSpreadsheet } from 'lucide-react'
@@ -10,6 +11,8 @@ export function StockLedger() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
+  const [page, setPage] = useState(1)
+  const pageSize = 25
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -33,6 +36,7 @@ export function StockLedger() {
       return matchSearch && matchType
     })
   }, [movements, search, typeFilter])
+  const visibleMovements = filtered.slice((page - 1) * pageSize, page * pageSize)
 
   const typeLabels: Record<string, string> = {
     opening: 'Opening', purchase: 'Purchase', sale: 'Sale', customer_return: 'Customer Return',
@@ -76,7 +80,7 @@ export function StockLedger() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((m) => (
+              {visibleMovements.map((m) => (
                 <tr key={m.id}>
                   <td>{formatDate(m.movement_date)}</td>
                   <td className="font-semibold">{m.product?.name ?? '-'}</td>
@@ -95,6 +99,7 @@ export function StockLedger() {
               ))}
             </tbody>
           </table>
+          <Pagination page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} />
         </div>
       )}
     </div>

@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useToast } from '../components/AppShell'
 import { Modal } from '../components/Modal'
 import { Loading, EmptyState, ConfirmDialog } from '../components/Feedback'
+import { Pagination } from '../components/Pagination'
 import { formatCurrency, formatDate } from '../lib/utils'
 import type { Expense, ExpenseCategory } from '../lib/types'
 import { Plus, Search, Edit2, Trash2, Wallet } from 'lucide-react'
@@ -17,6 +18,8 @@ export function Expenses() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Expense | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const pageSize = 20
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -38,6 +41,7 @@ export function Expenses() {
       return matchSearch && matchCat
     })
   }, [expenses, search, categoryFilter])
+  const visibleExpenses = filtered.slice((page - 1) * pageSize, page * pageSize)
 
   const totalAmount = useMemo(() => filtered.reduce((s, e) => s + Number(e.amount), 0), [filtered])
 
@@ -106,7 +110,7 @@ export function Expenses() {
               <tr><th>Date</th><th>Category</th><th>Description</th><th>Method</th><th className="text-right">Amount</th><th>Actions</th></tr>
             </thead>
             <tbody>
-              {filtered.map((e) => (
+              {visibleExpenses.map((e) => (
                 <tr key={e.id}>
                   <td>{formatDate(e.expense_date)}</td>
                   <td><span className="badge badge-neutral">{e.category_name ?? '-'}</span></td>
@@ -123,6 +127,7 @@ export function Expenses() {
               ))}
             </tbody>
           </table>
+          <Pagination page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} />
         </div>
       )}
 

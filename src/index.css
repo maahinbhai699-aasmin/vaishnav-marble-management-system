@@ -512,6 +512,12 @@ table.data-table {
 .data-table tbody tr:last-child td { border-bottom: none; }
 .data-table tbody tr:hover { background: var(--n-50); }
 .data-table tbody tr { transition: background-color 0.15s ease; }
+.data-table tbody tr { animation: rowEnter 0.24s ease both; }
+.data-table tbody tr:nth-child(2) { animation-delay: 0.02s; }
+.data-table tbody tr:nth-child(3) { animation-delay: 0.04s; }
+.data-table tbody tr:nth-child(4) { animation-delay: 0.06s; }
+.data-table tbody tr:nth-child(5) { animation-delay: 0.08s; }
+.data-table tbody tr:nth-child(6) { animation-delay: 0.1s; }
 
 /* Badges */
 .badge {
@@ -686,6 +692,18 @@ table.data-table {
 .data-table th, .data-table td { max-width: 280px; }
 .data-table td { overflow: hidden; text-overflow: ellipsis; }
 
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-card);
+}
+.pagination-summary, .pagination-page { color: var(--text-muted); font-size: 12px; }
+.pagination-controls { display: flex; align-items: center; gap: 10px; }
+
 /* Flex utilities */
 .flex { display: flex; }
 .flex-col { flex-direction: column; }
@@ -780,6 +798,7 @@ table.data-table {
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes pageEnter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes contentEnter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes rowEnter { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
@@ -828,6 +847,8 @@ table.data-table {
   .modal-footer { flex-wrap: wrap; }
   .modal-footer .btn { flex: 1 1 120px; justify-content: center; }
   .data-table { min-width: 720px; }
+  .pagination { align-items: stretch; flex-direction: column; }
+  .pagination-controls { justify-content: space-between; }
   .empty-state { padding: 36px 14px; }
 }
 

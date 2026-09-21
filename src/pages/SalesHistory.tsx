@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useToast } from '../components/AppShell'
 import { Loading, EmptyState, ConfirmDialog } from '../components/Feedback'
+import { Pagination } from '../components/Pagination'
 import { formatCurrency, formatDate, formatNumber } from '../lib/utils'
 import type { Sale, SaleItem } from '../lib/types'
 import { Search, Receipt, Printer, Eye, Trash2 } from 'lucide-react'
@@ -16,6 +17,8 @@ export function SalesHistory() {
   const [viewSale, setViewSale] = useState<Sale | null>(null)
   const [viewItems, setViewItems] = useState<SaleItem[]>([])
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const pageSize = 20
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -45,6 +48,7 @@ export function SalesHistory() {
       return matchSearch && matchStatus && matchDate
     })
   }, [sales, search, statusFilter, dateFilter])
+  const visibleSales = filtered.slice((page - 1) * pageSize, page * pageSize)
 
   const handleView = async (sale: Sale) => {
     setViewSale(sale)
@@ -106,7 +110,7 @@ export function SalesHistory() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((s) => (
+              {visibleSales.map((s) => (
                 <tr key={s.id}>
                   <td className="font-semibold">{s.invoice_number}</td>
                   <td>{formatDate(s.sale_date)}</td>
@@ -125,6 +129,7 @@ export function SalesHistory() {
               ))}
             </tbody>
           </table>
+          <Pagination page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} />
         </div>
       )}
 
