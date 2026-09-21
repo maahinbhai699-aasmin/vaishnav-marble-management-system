@@ -5,6 +5,7 @@ import { useToast } from '../components/AppShell'
 import { Modal } from '../components/Modal'
 import { Loading, EmptyState, ConfirmDialog } from '../components/Feedback'
 import { formatCurrency, formatNumber, stockStatus, stockStatusLabel, stockStatusColor, getInventoryType } from '../lib/utils'
+import { recordStockMovement } from '../lib/stockOps'
 import type { Product, Category, Unit } from '../lib/types'
 import { Plus, Search, Edit2, Trash2 } from 'lucide-react'
 
@@ -37,7 +38,7 @@ export function Products() {
     })
   }, [products, search, categoryFilter, stockFilter])
 
-  const handleSave = async (formData: Partial<Product>, selectedUnits: string[]) => {
+  const handleSave = async (formData: Partial<Product>, selectedUnits: string[], openingStock: { count: number; sqft: number; unit: string }) => {
     if (editing) {
       const { error } = await supabase.from('products').update({
         ...formData,
@@ -62,6 +63,19 @@ export function Products() {
           if (unit) {
             await supabase.from('product_units').insert({ product_id: newProd.id, unit_id: unit.id })
           }
+        }
+        if (openingStock.count > 0 || openingStock.sqft > 0) {
+          await recordStockMovement({
+            product_id: newProd.id,
+            category_id: formData.category_id ?? null,
+            transaction_type: 'opening',
+            stock_in_count: openingStock.count,
+            stock_in_sqft: openingStock.sqft,
+            unit: openingStock.unit,
+            cost_price: Number(formData.cost_price) || 0,
+            selling_price: Number(formData.retail_price) || 0,
+            remarks: `Opening stock: ${formData.name}`,
+          })
         }
       }
       toast('Product created successfully')
@@ -195,7 +209,7 @@ function ProductForm({ product, categories, subcategories, suppliers, locations,
   locations: { id: string; name: string }[]
   units: Unit[]
   onClose: () => void
-  onSave: (data: Partial<Product>, selectedUnits: string[]) => void
+  onSave: (data: Partial<Product>, selectedUnits: string[], openingStock: { count: number; sqft: number; unit: string }) => void
 }) {
   const [form, setForm] = useState({
     name: product?.name ?? '',
@@ -229,6 +243,8 @@ function ProductForm({ product, categories, subcategories, suppliers, locations,
     description: product?.description ?? '',
     is_active: product?.is_active ?? true,
   })
+  const [openingCount, setOpeningCount] = useState('')
+  const [openingSqft, setOpeningSqft] = useState('')
   const [selectedUnits, setSelectedUnits] = useState<string[]>(() => {
     if (!product) return [form.selling_unit]
     return units.filter((u) => {
@@ -285,7 +301,11 @@ function ProductForm({ product, categories, subcategories, suppliers, locations,
       description: form.description || null,
       is_active: form.is_active,
     }
-    onSave(data, selectedUnits)
+    onSave(data, selectedUnits, {
+      count: Number(openingCount) || 0,
+      sqft: Number(openingSqft) || 0,
+      unit: form.selling_unit,
+    })
   }
 
   return (
@@ -404,6 +424,23 @@ function ProductForm({ product, categories, subcategories, suppliers, locations,
             <input className="form-input" value={form.rack_number} onChange={(e) => set('rack_number', e.target.value)} />
           </div>
         </div>
+
+        {!product && (
+          <>
+            <h4 className="mb-2 mt-4">Opening Stock</h4>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Opening Count</label>
+                <input className="form-input" type="number" min="0" step="0.01" value={openingCount} onChange={(e) => setOpeningCount(e.target.value)} placeholder="Pieces / Boxes / Slabs" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Opening Sq.Ft</label>
+                <input className="form-input" type="number" min="0" step="0.01" value={openingSqft} onChange={(e) => setOpeningSqft(e.target.value)} placeholder="For slabs, tiles or area stock" />
+              </div>
+            </div>
+            <div className="form-hint">Opening stock is added to inventory and recorded in the Stock Ledger.</div>
+          </>
+        )}
 
         <h4 className="mb-2 mt-4">Pricing</h4>
         <div className="form-row">
