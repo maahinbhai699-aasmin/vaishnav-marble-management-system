@@ -319,8 +319,19 @@ export function POS() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8, flex: 1, overflow: 'auto' }}>
           {filteredProducts.map((p) => {
             const invType = p.category?.inventory_type ?? 'piece'
-            const stock = invType === 'piece' ? p.stock_count : invType === 'box' ? p.stock_count : p.stock_sqft
+            const stock = invType === 'slab'
+              ? p.stock_sqft
+              : invType === 'mixed'
+                ? Math.max(Number(p.stock_count), Number(p.stock_sqft))
+                : p.stock_count
             const outOfStock = stock <= 0
+            const stockLabel = invType === 'slab'
+              ? `${formatNumber(p.stock_count)} slabs / ${formatNumber(p.stock_sqft)} Sq.Ft`
+              : invType === 'box'
+                ? `${formatNumber(p.stock_count)} boxes / ${formatNumber(p.stock_sqft)} Sq.Ft`
+                : invType === 'mixed'
+                  ? `${formatNumber(p.stock_count)} pcs / ${formatNumber(p.stock_sqft)} Sq.Ft`
+                  : `${formatNumber(p.stock_count)} pcs`
             return (
               <button
                 key={p.id}
@@ -331,9 +342,15 @@ export function POS() {
               >
                 <div className="font-semibold text-sm" style={{ marginBottom: 4, lineHeight: '130%' }}>{p.name}</div>
                 <div className="text-muted text-sm">{p.category?.name}</div>
-                <div className="flex justify-between items-center mt-2">
-                  <span className="font-bold" style={{ color: 'var(--primary-600)' }}>{formatCurrency(p.retail_price)}</span>
-                  <span className="text-sm text-muted">{invType === 'piece' ? `${formatNumber(p.stock_count)} pcs` : invType === 'box' ? `${formatNumber(p.stock_count)} box` : `${formatNumber(p.stock_sqft)} sqft`}</span>
+                <div className="flex justify-between items-end gap-2 mt-2">
+                  <div>
+                    <div className="text-sm text-muted">Selling price</div>
+                    <span className="font-bold" style={{ color: 'var(--primary-600)' }}>{formatCurrency(p.retail_price)}</span>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-muted">{outOfStock ? 'Stock status' : 'Available'}</div>
+                    <span className={`badge ${outOfStock ? 'badge-danger' : 'badge-success'}`}>{outOfStock ? 'Out of stock' : stockLabel}</span>
+                  </div>
                 </div>
               </button>
             )
