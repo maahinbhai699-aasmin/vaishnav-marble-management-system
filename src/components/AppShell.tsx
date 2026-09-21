@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Package, Warehouse, ShoppingCart, Receipt, Users, Truck,
   ShoppingBag, Wallet, BarChart3, Settings, Menu, X, FileText, ArrowLeftRight,
-  Undo2, FileSpreadsheet, Boxes, Layers,
+  Undo2, FileSpreadsheet, Boxes, Layers, Moon, Sun,
 } from 'lucide-react'
 
 interface Toast {
@@ -51,8 +51,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
   const [toasts, setToasts] = useState<Toast[]>([])
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('vaishnav-theme') as 'light' | 'dark') ?? 'light'
+  })
 
   useEffect(() => { setSidebarOpen(false) }, [location.pathname])
+
+  useEffect(() => {
+    localStorage.setItem('vaishnav-theme', theme)
+  }, [theme])
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = Date.now() + Math.random()
@@ -62,7 +69,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <ToastContext.Provider value={showToast}>
-      <div className="app-layout">
+      <div className={`app-layout theme-${theme}`}>
         <div className={`sidebar-backdrop ${sidebarOpen ? 'show' : ''}`} onClick={() => setSidebarOpen(false)} />
         <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-brand">
@@ -99,6 +106,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             </button>
             <h1>Vaishnav Marble Shop</h1>
             <div className="spacer" />
+            <button className="theme-toggle" aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`} title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`} onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+              {theme === 'light' ? <Moon size={17} /> : <Sun size={17} />}
+              <span>{theme === 'light' ? 'Dark' : 'White'}</span>
+            </button>
             <Boxes size={18} style={{ color: 'var(--text-muted)' }} />
             <span className="text-muted text-sm">Inventory & Billing System</span>
           </header>

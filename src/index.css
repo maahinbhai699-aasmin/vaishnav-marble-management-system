@@ -246,6 +246,46 @@ a:hover { text-decoration: underline; }
   min-width: 0;
 }
 
+.theme-dark {
+  --bg: #111827;
+  --bg-card: #1f2937;
+  --text: #dbe4f0;
+  --text-heading: #f8fafc;
+  --text-muted: #9caec4;
+  --border: #374151;
+  --border-strong: #4b5563;
+  --n-50: #172033;
+  --n-100: #243044;
+  --n-200: #334155;
+  --n-300: #475569;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+  --shadow: 0 1px 3px rgba(0,0,0,0.24), 0 1px 2px rgba(0,0,0,0.16);
+}
+
+.theme-dark .topbar { background: #182231; }
+.theme-dark .data-table thead th { background: #172033; color: #b7c5d8; }
+.theme-dark .data-table tbody tr:hover { background: #243044; }
+.theme-dark .btn-secondary { background: #243044; color: #f8fafc; border-color: #475569; }
+.theme-dark .btn-ghost:hover { background: #243044; }
+.theme-dark .form-input, .theme-dark .form-select, .theme-dark .form-textarea { background: #182231; color: #f8fafc; }
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  color: var(--text-heading);
+  font: 600 12px var(--sans);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+.theme-toggle:hover { background: var(--secondary-100); color: var(--secondary-700); }
+.theme-toggle:active { transform: scale(0.96); }
+
 .topbar {
   height: 60px;
   background: var(--bg-card);
