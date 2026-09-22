@@ -4,7 +4,6 @@ import { useToast } from '../components/AppShell'
 import { Loading, EmptyState, ConfirmDialog } from '../components/Feedback'
 import { Pagination } from '../components/Pagination'
 import { formatCurrency, formatDate, formatNumber } from '../lib/utils'
-import { businessProfile } from '../lib/business'
 import type { Sale, SaleItem } from '../lib/types'
 import { Search, Receipt, Printer, Eye, Trash2 } from 'lucide-react'
 
@@ -161,15 +160,10 @@ function SaleView({ sale, items, onClose }: { sale: Sale; items: SaleItem[]; onC
 
       <div className="invoice">
         <div className="invoice-header">
-          <div className="invoice-business">
-            <img className="invoice-logo" src={settings?.logo_url || businessProfile.logoUrl} alt="Vaishnavi Marble" />
-            <div>
-              <div className="invoice-title">{settings?.business_name ?? businessProfile.defaultName}</div>
-              {businessProfile.addresses.map((address) => <div key={address} className="invoice-contact">{address}</div>)}
-              <div className="invoice-contact">Phone: {businessProfile.phone}</div>
-              <div className="invoice-contact">Email: {settings?.email || businessProfile.email}</div>
-              {settings?.gst_number && <div className="invoice-contact">GST: {settings.gst_number}</div>}
-            </div>
+          <div>
+            <div className="invoice-title">{settings?.business_name ?? 'Vaishnav Marble Shop'}</div>
+            <div style={{ fontSize: 13, color: '#666' }}>{settings?.address ?? ''}</div>
+            <div style={{ fontSize: 13, color: '#666' }}>Phone: {settings?.phone ?? ''} {settings?.gst_number ? `| GST: ${settings.gst_number}` : ''}</div>
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 22, fontWeight: 700 }}>INVOICE</div>
