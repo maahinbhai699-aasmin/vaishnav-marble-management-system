@@ -1,5 +1,6 @@
 import { type ReactNode, useState, useEffect, createContext, useContext, useCallback } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
+import { businessProfile } from '../lib/business'
 import {
   LayoutDashboard, Package, Warehouse, ShoppingCart, Receipt, Users, Truck,
   ShoppingBag, Wallet, BarChart3, Settings, Menu, X, FileText, ArrowLeftRight,
@@ -73,7 +74,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className={`sidebar-backdrop ${sidebarOpen ? 'show' : ''}`} onClick={() => setSidebarOpen(false)} />
         <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-brand">
-            <div className="brand-icon">V</div>
+            <img className="brand-icon" src={businessProfile.logoUrl} alt="Vaishnavi Marble logo" />
             <div>
               <div className="brand-name">Vaishnav Marble</div>
               <div className="brand-sub">Management System</div>
