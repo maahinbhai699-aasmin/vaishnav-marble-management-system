@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useToast } from '../components/AppShell'
 import { Loading } from '../components/Feedback'
 import type { Settings } from '../lib/types'
+import { businessProfile } from '../lib/business'
 import { Settings as SettingsIcon, Save } from 'lucide-react'
 
 export function SettingsPage() {
@@ -21,11 +22,11 @@ export function SettingsPage() {
   useEffect(() => { fetchData() }, [fetchData])
 
   const [form, setForm] = useState({
-    business_name: '',
-    address: '',
-    phone: '',
+    business_name: businessProfile.defaultName,
+    address: businessProfile.addresses.join('\n'),
+    phone: businessProfile.phone,
     gst_number: '',
-    email: '',
+    email: businessProfile.email,
     terms_conditions: '',
     bank_name: '',
     bank_account: '',
@@ -36,11 +37,11 @@ export function SettingsPage() {
   useEffect(() => {
     if (settings) {
       setForm({
-        business_name: settings.business_name ?? '',
-        address: settings.address ?? '',
-        phone: settings.phone ?? '',
+        business_name: settings.business_name ?? businessProfile.defaultName,
+        address: settings.address || businessProfile.addresses.join('\n'),
+        phone: settings.phone || businessProfile.phone,
         gst_number: settings.gst_number ?? '',
-        email: settings.email ?? '',
+        email: settings.email || businessProfile.email,
         terms_conditions: settings.terms_conditions ?? '',
         bank_name: settings.bank_name ?? '',
         bank_account: settings.bank_account ?? '',
