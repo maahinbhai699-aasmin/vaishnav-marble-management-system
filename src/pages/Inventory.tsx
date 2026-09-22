@@ -76,6 +76,13 @@ export function Inventory() {
 
   const handleDamage = async (entry: DamageEntry) => {
     if (!damageModal) return
+    const invType = damageModal.category?.inventory_type ?? 'piece'
+    const available = invType === 'piece' ? Number(damageModal.stock_count) : Number(damageModal.stock_sqft)
+    const requested = invType === 'piece' ? entry.quantity : entry.sqft
+    if (requested > available) {
+      toast(`Damage cannot exceed available stock (${formatNumber(available)}).`, 'error')
+      return
+    }
     const { error: movErr } = await supabase.from('stock_movements').insert({
       product_id: entry.product_id,
       category_id: damageModal.category_id,
@@ -191,7 +198,9 @@ export function Inventory() {
                     <td className="text-right">{Number(p.damaged_count) > 0 ? formatNumber(p.damaged_count) : '-'}</td>
                     <td className="text-right">{Number(p.min_stock_level) > 0 ? formatNumber(p.min_stock_level) : '-'}</td>
                     <td><span className={`badge ${stockStatusColor(stockStatus(p))}`}>{stockStatusLabel(stockStatus(p))}</span></td>
-                    <td><button className="btn btn-ghost btn-sm" onClick={() => setDamageModal(p)}>Damage</button></td>
+                    <td>{(invType === 'piece' ? Number(p.stock_count) : Number(p.stock_sqft)) > 0
+                      ? <button className="btn btn-ghost btn-sm" onClick={() => setDamageModal(p)}>Damage</button>
+                      : '-'}</td>
                   </tr>
                 )
               })}
