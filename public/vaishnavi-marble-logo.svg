@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" role="img" aria-labelledby="title desc">
+  <title id="title">Vaishnavi Marble</title>
+  <desc id="desc">Orange Vaishnavi Marble emblem and wordmark on a dark background</desc>
+  <rect width="500" height="500" fill="#080a16"/>
+  <g fill="#ff6900">
+    <path d="M132 145h72l46 74 47-74h72l-43 57v-34h-30L250 282l-46-114h-30v34z"/>
+    <path d="M188 190l62 99 62-99v55l-62 96-62-96z"/>
+    <path d="M188 245l62 95 62-95v55l-62 95-62-95z"/>
+  </g>
+  <text x="250" y="374" text-anchor="middle" fill="#ff6900" font-family="Arial, sans-serif" font-size="37" font-weight="700" letter-spacing="-1">VAISHNAVI MARBLE</text>
+</svg>

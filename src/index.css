@@ -784,6 +784,27 @@ table.data-table {
   gap: 20px;
 }
 
+.invoice-business {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  max-width: 560px;
+}
+
+.invoice-logo {
+  width: 74px;
+  height: 74px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+.invoice-contact {
+  font-size: 11px;
+  line-height: 1.45;
+  color: #666;
+  max-width: 470px;
+}
+
 .invoice-title {
   font-size: 28px;
   font-weight: 700;
