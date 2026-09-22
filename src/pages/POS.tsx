@@ -302,22 +302,59 @@ export function POS() {
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: 16, minHeight: 'calc(100vh - 120px)' }}>
-      {/* Product selection */}
-      <div className="flex flex-col gap-3">
-        <div className="page-header" style={{ marginBottom: 0 }}>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 1fr) 420px',
+        gap: 20,
+        alignItems: 'start',
+        minHeight: 'calc(100vh - 120px)',
+      }}
+    >
+      {/* ───────────── Product selection ───────────── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-end',
+            gap: 16,
+            flexWrap: 'wrap',
+          }}
+        >
           <div>
-            <h2>POS / Billing</h2>
-            <div className="page-sub">Search and add products to create a sale</div>
+            <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, letterSpacing: '-0.01em' }}>POS / Billing</h2>
+            <div className="text-muted text-sm" style={{ marginTop: 2 }}>
+              Search and add products to create a sale
+            </div>
           </div>
+          <span className="badge badge-success" style={{ padding: '6px 12px', fontSize: 12 }}>
+            {filteredProducts.length} products
+          </span>
         </div>
 
         <div className="search-input" style={{ width: '100%' }}>
-          <Search />
-          <input className="form-input" style={{ width: '100%' }} placeholder="Search by product name, SKU, or barcode..." value={search} onChange={(e) => setSearch(e.target.value)} autoFocus />
+          <Search size={18} />
+          <input
+            className="form-input"
+            style={{ width: '100%' }}
+            placeholder="Search by product name, SKU, or barcode..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            autoFocus
+          />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8, flex: 1, overflow: 'auto' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+            gap: 12,
+            overflow: 'auto',
+            paddingRight: 4,
+            paddingBottom: 8,
+          }}
+        >
           {filteredProducts.map((p) => {
             const invType = p.category?.inventory_type ?? 'piece'
             const stock = invType === 'slab'
@@ -337,20 +374,57 @@ export function POS() {
               <button
                 key={p.id}
                 className="card"
-                style={{ padding: 12, textAlign: 'left', cursor: outOfStock ? 'not-allowed' : 'pointer', opacity: outOfStock ? 0.5 : 1, border: '1px solid var(--border)' }}
+                style={{
+                  padding: 14,
+                  textAlign: 'left',
+                  cursor: outOfStock ? 'not-allowed' : 'pointer',
+                  opacity: outOfStock ? 0.55 : 1,
+                  border: '1px solid var(--border)',
+                  borderRadius: 12,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                  minHeight: 120,
+                }}
                 onClick={() => !outOfStock && addToCart(p)}
                 disabled={outOfStock}
               >
-                <div className="font-semibold text-sm" style={{ marginBottom: 4, lineHeight: '130%' }}>{p.name}</div>
-                <div className="text-muted text-sm">{p.category?.name}</div>
-                <div className="flex justify-between items-end gap-2 mt-2">
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
+                  <div className="font-semibold text-sm" style={{ lineHeight: 1.35 }}>{p.name}</div>
+                  <span
+                    className={`badge ${outOfStock ? 'badge-danger' : 'badge-success'}`}
+                    style={{ flexShrink: 0, fontSize: 10, padding: '2px 8px' }}
+                  >
+                    {outOfStock ? 'Out' : 'In'}
+                  </span>
+                </div>
+
+                <div className="text-muted text-sm" style={{ marginTop: -4 }}>{p.category?.name}</div>
+
+                <div
+                  style={{
+                    marginTop: 'auto',
+                    paddingTop: 8,
+                    borderTop: '1px dashed var(--border)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-end',
+                    gap: 8,
+                  }}
+                >
                   <div>
-                    <div className="text-sm text-muted">Selling price</div>
-                    <span className="font-bold" style={{ color: 'var(--primary-600)' }}>{formatCurrency(p.retail_price)}</span>
+                    <div className="text-sm text-muted" style={{ fontSize: 11, lineHeight: 1.2 }}>Selling price</div>
+                    <span className="font-bold" style={{ color: 'var(--primary-600)', fontSize: 16 }}>
+                      {formatCurrency(p.retail_price)}
+                    </span>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm text-muted">{outOfStock ? 'Stock status' : 'Available'}</div>
-                    <span className={`badge ${outOfStock ? 'badge-danger' : 'badge-success'}`}>{outOfStock ? 'Out of stock' : stockLabel}</span>
+                  <div style={{ textAlign: 'right', maxWidth: 110 }}>
+                    <div className="text-sm text-muted" style={{ fontSize: 11, lineHeight: 1.2 }}>
+                      {outOfStock ? 'Stock status' : 'Available'}
+                    </div>
+                    <span className="text-sm" style={{ fontWeight: 600, fontSize: 12 }}>
+                      {outOfStock ? 'Out of stock' : stockLabel}
+                    </span>
                   </div>
                 </div>
               </button>
@@ -359,62 +433,215 @@ export function POS() {
         </div>
       </div>
 
-      {/* Cart panel */}
-      <div className="card" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <div className="card-header">
-          <div className="card-title flex items-center gap-2"><ShoppingCart size={18} /> Cart ({cart.length})</div>
-          {cart.length > 0 && <button className="btn btn-ghost btn-sm" onClick={() => setCart([])}>Clear</button>}
+      {/* ───────────── Cart panel ───────────── */}
+      <div
+        className="card"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          position: 'sticky',
+          top: 16,
+          maxHeight: 'calc(100vh - 130px)',
+          borderRadius: 14,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.04)',
+        }}
+      >
+        <div
+          className="card-header"
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            borderBottom: '1px solid var(--border)',
+            padding: '14px 16px',
+          }}
+        >
+          <div className="card-title flex items-center gap-2" style={{ fontSize: 15, fontWeight: 700 }}>
+            <ShoppingCart size={18} />
+            Cart
+            <span
+              className="badge badge-success"
+              style={{ marginLeft: 2, fontSize: 11, padding: '2px 8px' }}
+            >
+              {cart.length}
+            </span>
+          </div>
+          {cart.length > 0 && (
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setCart([])}
+              style={{ fontSize: 12 }}
+            >
+              Clear
+            </button>
+          )}
         </div>
 
-        <div style={{ flex: 1, overflow: 'auto', padding: 12 }}>
+        <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
           {/* Customer */}
           <div className="form-group">
-            <label className="form-label">Customer</label>
+            <label className="form-label" style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.02em' }}>
+              CUSTOMER
+            </label>
             {customer ? (
-              <div className="flex items-center justify-between" style={{ padding: '8px 12px', background: 'var(--n-50)', borderRadius: 6 }}>
-                <div>
-                  <div className="font-semibold text-sm">{customer.name}</div>
-                  <div className="text-muted text-sm">{customer.mobile ?? ''}</div>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 12px',
+                  background: 'var(--n-50)',
+                  borderRadius: 10,
+                  border: '1px solid var(--border)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: '50%',
+                      background: 'var(--primary-600)',
+                      color: '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 700,
+                      fontSize: 14,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {customer.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-sm">{customer.name}</div>
+                    <div className="text-muted text-sm" style={{ fontSize: 12 }}>
+                      {customer.mobile ?? 'No mobile'}
+                    </div>
+                  </div>
                 </div>
-                <button className="btn btn-ghost btn-sm" onClick={() => setCustomer(null)}><X size={14} /></button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setCustomer(null)}
+                  style={{ padding: 6 }}
+                >
+                  <X size={14} />
+                </button>
               </div>
             ) : (
-              <button className="btn btn-secondary btn-sm w-full" onClick={() => setShowCustomerModal(true)}>
+              <button
+                className="btn btn-secondary btn-sm w-full"
+                onClick={() => setShowCustomerModal(true)}
+                style={{ justifyContent: 'center', borderStyle: 'dashed' }}
+              >
                 <UserPlus size={14} /> Select Customer
               </button>
             )}
           </div>
 
           {cart.length === 0 ? (
-            <div className="empty-state" style={{ padding: 24 }}>
-              <ShoppingCart style={{ width: 36, height: 36 }} />
-              <p>Cart is empty</p>
-              <p className="text-sm">Search and click products to add</p>
+            <div
+              className="empty-state"
+              style={{
+                padding: 32,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 6,
+                color: 'var(--n-400)',
+              }}
+            >
+              <ShoppingCart style={{ width: 40, height: 40, opacity: 0.5 }} />
+              <p style={{ fontWeight: 600, margin: 0 }}>Cart is empty</p>
+              <p className="text-sm" style={{ margin: 0 }}>Search and click products to add</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2" style={{ marginTop: 12 }}>
               {cart.map((item, i) => (
-                <div key={i} style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10 }}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-sm" style={{ flex: 1 }}>{item.description}</span>
-                    <button className="btn btn-ghost btn-sm" onClick={() => removeFromCart(i)}><Trash2 size={14} /></button>
+                <div
+                  key={i}
+                  style={{
+                    border: '1px solid var(--border)',
+                    borderRadius: 10,
+                    padding: 10,
+                    background: 'var(--n-50)',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      gap: 8,
+                      marginBottom: 8,
+                    }}
+                  >
+                    <span className="font-semibold text-sm" style={{ flex: 1, lineHeight: 1.3 }}>
+                      {item.description}
+                    </span>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => removeFromCart(i)}
+                      style={{ padding: 4, flexShrink: 0 }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     {item.unit === 'Sq.Ft' || item.slab_id ? (
                       <>
-                        <input className="form-input" type="number" step="0.01" style={{ width: 80 }} placeholder="Sq.Ft" value={item.sqft || ''} onChange={(e) => updateCartItem(i, { sqft: Number(e.target.value) })} disabled={item.is_full_slab} />
-                        <span className="text-sm text-muted">x</span>
-                        <input className="form-input" type="number" step="0.01" style={{ width: 80 }} placeholder="Rate" value={item.rate} onChange={(e) => updateCartItem(i, { rate: Number(e.target.value) })} />
+                        <input
+                          className="form-input"
+                          type="number"
+                          step="0.01"
+                          style={{ width: 78, padding: '6px 8px', fontSize: 13 }}
+                          placeholder="Sq.Ft"
+                          value={item.sqft || ''}
+                          onChange={(e) => updateCartItem(i, { sqft: Number(e.target.value) })}
+                          disabled={item.is_full_slab}
+                        />
+                        <span className="text-sm text-muted">×</span>
+                        <input
+                          className="form-input"
+                          type="number"
+                          step="0.01"
+                          style={{ width: 78, padding: '6px 8px', fontSize: 13 }}
+                          placeholder="Rate"
+                          value={item.rate}
+                          onChange={(e) => updateCartItem(i, { rate: Number(e.target.value) })}
+                        />
                       </>
                     ) : (
                       <>
-                        <input className="form-input" type="number" step="0.01" style={{ width: 70 }} placeholder="Qty" value={item.quantity || ''} onChange={(e) => updateCartItem(i, { quantity: Number(e.target.value) })} />
-                        <span className="text-sm text-muted">x</span>
-                        <input className="form-input" type="number" step="0.01" style={{ width: 80 }} placeholder="Rate" value={item.rate} onChange={(e) => updateCartItem(i, { rate: Number(e.target.value) })} />
-                        <span className="text-sm text-muted">{item.unit}</span>
+                        <input
+                          className="form-input"
+                          type="number"
+                          step="0.01"
+                          style={{ width: 66, padding: '6px 8px', fontSize: 13 }}
+                          placeholder="Qty"
+                          value={item.quantity || ''}
+                          onChange={(e) => updateCartItem(i, { quantity: Number(e.target.value) })}
+                        />
+                        <span className="text-sm text-muted">×</span>
+                        <input
+                          className="form-input"
+                          type="number"
+                          step="0.01"
+                          style={{ width: 78, padding: '6px 8px', fontSize: 13 }}
+                          placeholder="Rate"
+                          value={item.rate}
+                          onChange={(e) => updateCartItem(i, { rate: Number(e.target.value) })}
+                        />
+                        <span className="text-sm text-muted" style={{ fontSize: 12 }}>{item.unit}</span>
                       </>
                     )}
-                    <span className="font-bold text-sm flex-1 text-right" style={{ color: 'var(--primary-600)' }}>{formatCurrency(item.amount)}</span>
+                    <span
+                      className="font-bold text-sm"
+                      style={{ marginLeft: 'auto', color: 'var(--primary-600)', whiteSpace: 'nowrap' }}
+                    >
+                      {formatCurrency(item.amount)}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -424,8 +651,19 @@ export function POS() {
           {/* Charges */}
           {cart.length > 0 && (
             <>
-              <h4 className="mb-2 mt-4" style={{ fontSize: 14 }}>Additional Charges</h4>
-              <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
+              <h4
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                  color: 'var(--n-500)',
+                  margin: '20px 0 8px',
+                  textTransform: 'uppercase',
+                }}
+              >
+                Additional Charges
+              </h4>
+              <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 <input className="form-input" placeholder="Cutting" type="number" value={charges.cutting} onChange={(e) => setCharges({ ...charges, cutting: e.target.value })} />
                 <input className="form-input" placeholder="Polishing" type="number" value={charges.polishing} onChange={(e) => setCharges({ ...charges, polishing: e.target.value })} />
                 <input className="form-input" placeholder="Loading" type="number" value={charges.loading} onChange={(e) => setCharges({ ...charges, loading: e.target.value })} />
@@ -434,12 +672,12 @@ export function POS() {
                 <input className="form-input" placeholder="Discount" type="number" value={charges.discount} onChange={(e) => setCharges({ ...charges, discount: e.target.value })} />
               </div>
 
-              <div className="form-group mt-4">
-                <label className="form-label">Salesperson</label>
+              <div className="form-group" style={{ marginTop: 16 }}>
+                <label className="form-label" style={{ fontSize: 12, fontWeight: 600 }}>Salesperson</label>
                 <input className="form-input" value={salesperson} onChange={(e) => setSalesperson(e.target.value)} />
               </div>
               <div className="form-group">
-                <label className="form-label">Notes</label>
+                <label className="form-label" style={{ fontSize: 12, fontWeight: 600 }}>Notes</label>
                 <input className="form-input" value={notes} onChange={(e) => setNotes(e.target.value)} />
               </div>
             </>
@@ -448,24 +686,66 @@ export function POS() {
 
         {/* Totals & checkout */}
         {cart.length > 0 && (
-          <div style={{ borderTop: '1px solid var(--border)', padding: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, marginBottom: 4 }}>
-              <span>Subtotal</span><span>{formatCurrency(subtotal)}</span>
+          <div
+            style={{
+              borderTop: '1px solid var(--border)',
+              padding: 16,
+              background: 'var(--n-50)',
+            }}
+          >
+            <div style={{ fontSize: 13, marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+              <span className="text-muted">Subtotal</span>
+              <span style={{ fontWeight: 600 }}>{formatCurrency(subtotal)}</span>
             </div>
-            {totalCharges > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, marginBottom: 4 }}><span>Charges</span><span>{formatCurrency(totalCharges)}</span></div>}
-            {discount > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, marginBottom: 4 }}><span>Discount</span><span>-{formatCurrency(discount)}</span></div>}
-            {gstAmount > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, marginBottom: 4 }}><span>GST</span><span>{formatCurrency(gstAmount)}</span></div>}
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 18, fontWeight: 700, borderTop: '1px solid var(--border)', paddingTop: 8, marginBottom: 12 }}>
-              <span>Grand Total</span><span style={{ color: 'var(--primary-600)' }}>{formatCurrency(grandTotal)}</span>
+            {totalCharges > 0 && (
+              <div style={{ fontSize: 13, marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+                <span className="text-muted">Charges</span>
+                <span style={{ fontWeight: 600 }}>{formatCurrency(totalCharges)}</span>
+              </div>
+            )}
+            {discount > 0 && (
+              <div style={{ fontSize: 13, marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+                <span className="text-muted">Discount</span>
+                <span style={{ fontWeight: 600, color: 'var(--success-600)' }}>-{formatCurrency(discount)}</span>
+              </div>
+            )}
+            {gstAmount > 0 && (
+              <div style={{ fontSize: 13, marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+                <span className="text-muted">GST</span>
+                <span style={{ fontWeight: 600 }}>{formatCurrency(gstAmount)}</span>
+              </div>
+            )}
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                fontSize: 18,
+                fontWeight: 700,
+                borderTop: '1px solid var(--border)',
+                paddingTop: 10,
+                marginTop: 8,
+                marginBottom: 14,
+              }}
+            >
+              <span>Grand Total</span>
+              <span style={{ color: 'var(--primary-600)' }}>{formatCurrency(grandTotal)}</span>
             </div>
 
-            <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr', marginBottom: 8 }}>
+            <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr', marginBottom: 8, gap: 8 }}>
               <div>
-                <label className="form-label">Paid Amount</label>
-                <input className="form-input" type="number" value={paidAmount} onChange={(e) => setPaidAmount(e.target.value)} placeholder="0" />
+                <label className="form-label" style={{ fontSize: 12, fontWeight: 600 }}>Paid Amount</label>
+                <input
+                  className="form-input"
+                  type="number"
+                  value={paidAmount}
+                  onChange={(e) => setPaidAmount(e.target.value)}
+                  placeholder="0"
+                />
               </div>
               <div>
-                <label className="form-label">Payment Method</label>
+                <label className="form-label" style={{ fontSize: 12, fontWeight: 600 }}>Payment Method</label>
                 <select className="form-select" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
                   <option value="cash">Cash</option>
                   <option value="upi">UPI</option>
@@ -477,10 +757,45 @@ export function POS() {
               </div>
             </div>
 
-            {due > 0 && <div className="text-sm text-muted mb-2">Due: <span style={{ color: 'var(--error-600)', fontWeight: 600 }}>{formatCurrency(due)}</span></div>}
-            {due < 0 && <div className="text-sm text-muted mb-2">Change: <span style={{ color: 'var(--success-600)', fontWeight: 600 }}>{formatCurrency(-due)}</span></div>}
+            {due > 0 && (
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontSize: 13,
+                  marginBottom: 10,
+                  padding: '8px 10px',
+                  background: '#fef2f2',
+                  borderRadius: 8,
+                }}
+              >
+                <span className="text-muted">Due</span>
+                <span style={{ color: 'var(--error-600)', fontWeight: 700 }}>{formatCurrency(due)}</span>
+              </div>
+            )}
+            {due < 0 && (
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontSize: 13,
+                  marginBottom: 10,
+                  padding: '8px 10px',
+                  background: '#f0fdf4',
+                  borderRadius: 8,
+                }}
+              >
+                <span className="text-muted">Change</span>
+                <span style={{ color: 'var(--success-600)', fontWeight: 700 }}>{formatCurrency(-due)}</span>
+              </div>
+            )}
 
-            <button className="btn btn-primary btn-lg w-full" onClick={handleCheckout} disabled={saving}>
+            <button
+              className="btn btn-primary btn-lg w-full"
+              onClick={handleCheckout}
+              disabled={saving}
+              style={{ fontWeight: 700, letterSpacing: '0.01em' }}
+            >
               {saving ? 'Processing...' : 'Complete Sale'}
             </button>
           </div>
@@ -489,16 +804,57 @@ export function POS() {
 
       {/* Customer modal */}
       {showCustomerModal && (
-        <Modal open onClose={() => setShowCustomerModal(false)} title="Select Customer" size="md"
-          footer={<><button className="btn btn-secondary" onClick={() => setShowCustomerModal(false)}>Cancel</button><button className="btn btn-primary" onClick={handleCreateCustomer} disabled={!newCustomer.name}><Plus size={14} /> Create New</button></>}
+        <Modal
+          open
+          onClose={() => setShowCustomerModal(false)}
+          title="Select Customer"
+          size="md"
+          footer={
+            <>
+              <button className="btn btn-secondary" onClick={() => setShowCustomerModal(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={handleCreateCustomer} disabled={!newCustomer.name}>
+                <Plus size={14} /> Create New
+              </button>
+            </>
+          }
         >
           <div className="search-input mb-4" style={{ width: '100%' }}>
             <Search />
-            <input className="form-input" style={{ width: '100%' }} placeholder="Search customer by name or mobile..." value={customerSearch} onChange={(e) => setCustomerSearch(e.target.value)} />
+            <input
+              className="form-input"
+              style={{ width: '100%' }}
+              placeholder="Search customer by name or mobile..."
+              value={customerSearch}
+              onChange={(e) => setCustomerSearch(e.target.value)}
+            />
           </div>
-          <div className="flex flex-col gap-2 mb-4" style={{ maxHeight: 200, overflow: 'auto' }}>
+
+          <div className="flex flex-col gap-2 mb-4" style={{ maxHeight: 220, overflow: 'auto' }}>
             {filteredCustomers.map((c) => (
-              <button key={c.id} className="btn btn-secondary w-full" style={{ justifyContent: 'flex-start' }} onClick={() => { setCustomer(c); setShowCustomerModal(false) }}>
+              <button
+                key={c.id}
+                className="btn btn-secondary w-full"
+                style={{ justifyContent: 'flex-start', padding: '10px 12px', borderRadius: 10 }}
+                onClick={() => { setCustomer(c); setShowCustomerModal(false) }}
+              >
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    background: 'var(--primary-600)',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    marginRight: 10,
+                    flexShrink: 0,
+                  }}
+                >
+                  {c.name.charAt(0).toUpperCase()}
+                </div>
                 <div className="text-left">
                   <div className="font-semibold text-sm">{c.name}</div>
                   <div className="text-muted text-sm">{c.mobile ?? 'No mobile'}</div>
@@ -506,7 +862,19 @@ export function POS() {
               </button>
             ))}
           </div>
-          <h4 className="mb-2">New Customer</h4>
+
+          <h4
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              color: 'var(--n-500)',
+              textTransform: 'uppercase',
+              marginBottom: 10,
+            }}
+          >
+            New Customer
+          </h4>
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">Name <span className="req">*</span></label>
@@ -537,7 +905,12 @@ export function POS() {
 
       {/* Slab selection modal */}
       {showSlabModal && (
-        <SlabSelectModal product={showSlabModal} slabs={slabs.filter((s) => s.product_id === showSlabModal.id)} onClose={() => setShowSlabModal(null)} onSelect={addSlabToCart} />
+        <SlabSelectModal
+          product={showSlabModal}
+          slabs={slabs.filter((s) => s.product_id === showSlabModal.id)}
+          onClose={() => setShowSlabModal(null)}
+          onSelect={addSlabToCart}
+        />
       )}
     </div>
   )
@@ -548,12 +921,26 @@ function SlabSelectModal({ product, slabs, onClose, onSelect }: { product: Produ
   const [sellSqft, setSellSqft] = useState('')
 
   return (
-    <Modal open onClose={onClose} title={`Select Slab - ${product.name}`} size="lg"
-      footer={<><button className="btn btn-secondary" onClick={onClose}>Cancel</button>
-        {selectedSlab && <button className="btn btn-primary" onClick={() => {
-          if (sellSqft && Number(sellSqft) > 0) onSelect(selectedSlab, Number(sellSqft), false)
-        }}>Add Partial Sale</button>}
-      </>}
+    <Modal
+      open
+      onClose={onClose}
+      title={`Select Slab - ${product.name}`}
+      size="lg"
+      footer={
+        <>
+          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          {selectedSlab && (
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                if (sellSqft && Number(sellSqft) > 0) onSelect(selectedSlab, Number(sellSqft), false)
+              }}
+            >
+              Add Partial Sale
+            </button>
+          )}
+        </>
+      }
     >
       {slabs.length === 0 ? (
         <EmptyState title="No available slabs" message="All slabs for this product are sold or damaged" />
@@ -562,33 +949,69 @@ function SlabSelectModal({ product, slabs, onClose, onSelect }: { product: Produ
           <table className="data-table">
             <thead>
               <tr>
-                <th></th><th>Slab #</th><th>Batch</th><th className="text-right">Total Sq.Ft</th><th className="text-right">Remaining</th><th className="text-right">Rate</th><th>Status</th>
+                <th></th>
+                <th>Slab #</th>
+                <th>Batch</th>
+                <th className="text-right">Total Sq.Ft</th>
+                <th className="text-right">Remaining</th>
+                <th className="text-right">Rate</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
               {slabs.map((s) => (
-                <tr key={s.id} style={{ cursor: 'pointer', background: selectedSlab?.id === s.id ? 'var(--primary-50)' : '' }} onClick={() => setSelectedSlab(s)}>
+                <tr
+                  key={s.id}
+                  style={{
+                    cursor: 'pointer',
+                    background: selectedSlab?.id === s.id ? 'var(--primary-50)' : '',
+                  }}
+                  onClick={() => setSelectedSlab(s)}
+                >
                   <td><input type="radio" checked={selectedSlab?.id === s.id} readOnly /></td>
                   <td className="font-semibold">{s.slab_number}</td>
                   <td>{s.batch_number ?? '-'}</td>
                   <td className="text-right">{formatNumber(s.total_sqft)}</td>
                   <td className="text-right font-semibold">{formatNumber(s.remaining_sqft)}</td>
                   <td className="text-right">{formatCurrency(s.selling_rate)}</td>
-                  <td><span className={`badge ${s.status === 'available' ? 'badge-success' : 'badge-warning'}`}>{s.status.replace('_', ' ')}</span></td>
+                  <td>
+                    <span className={`badge ${s.status === 'available' ? 'badge-success' : 'badge-warning'}`}>
+                      {s.status.replace('_', ' ')}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+
       {selectedSlab && (
-        <div className="form-row mt-4">
-          <div className="form-group">
+        <div
+          className="form-row mt-4"
+          style={{
+            padding: 14,
+            background: 'var(--n-50)',
+            borderRadius: 10,
+            border: '1px solid var(--border)',
+            marginTop: 16,
+          }}
+        >
+          <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label">Sell Sq.Ft (partial)</label>
-            <input className="form-input" type="number" step="0.01" value={sellSqft} onChange={(e) => setSellSqft(e.target.value)} placeholder={`Max: ${selectedSlab.remaining_sqft}`} />
+            <input
+              className="form-input"
+              type="number"
+              step="0.01"
+              value={sellSqft}
+              onChange={(e) => setSellSqft(e.target.value)}
+              placeholder={`Max: ${selectedSlab.remaining_sqft}`}
+            />
           </div>
-          <div className="form-group flex items-center" style={{ paddingTop: 24 }}>
-            <button className="btn btn-primary" onClick={() => onSelect(selectedSlab, selectedSlab.total_sqft, true)}>Sell Full Slab</button>
+          <div className="form-group flex items-center" style={{ paddingTop: 24, margin: 0 }}>
+            <button className="btn btn-primary" onClick={() => onSelect(selectedSlab, selectedSlab.total_sqft, true)}>
+              Sell Full Slab
+            </button>
           </div>
         </div>
       )}
@@ -688,7 +1111,11 @@ function InvoiceView({ saleId, onClose }: { saleId: string; onClose: () => void 
         <table className="invoice-table">
           <thead>
             <tr>
-              <th>Description</th><th>Unit</th><th className="text-right">Qty/Sq.Ft</th><th className="text-right">Rate</th><th className="text-right">Amount</th>
+              <th>Description</th>
+              <th>Unit</th>
+              <th className="text-right">Qty/Sq.Ft</th>
+              <th className="text-right">Rate</th>
+              <th className="text-right">Amount</th>
             </tr>
           </thead>
           <tbody>
@@ -715,7 +1142,9 @@ function InvoiceView({ saleId, onClose }: { saleId: string; onClose: () => void 
           {Number(sale.gst_amount) > 0 && <div className="total-row"><span>GST</span><span>{formatCurrency(sale.gst_amount)}</span></div>}
           <div className="total-row grand-total"><span>Grand Total</span><span>{formatCurrency(sale.grand_total)}</span></div>
           <div className="total-row"><span>Paid</span><span>{formatCurrency(sale.paid_amount)}</span></div>
-          <div className="total-row" style={{ fontWeight: 600, color: Number(sale.due_amount) > 0 ? '#dc2626' : '#16a34a' }}><span>Due</span><span>{formatCurrency(sale.due_amount)}</span></div>
+          <div className="total-row" style={{ fontWeight: 600, color: Number(sale.due_amount) > 0 ? '#dc2626' : '#16a34a' }}>
+            <span>Due</span><span>{formatCurrency(sale.due_amount)}</span>
+          </div>
         </div>
 
         {settings?.terms_conditions && (

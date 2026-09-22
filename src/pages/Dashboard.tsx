@@ -4,7 +4,7 @@ import { formatCurrency, formatNumber } from '../lib/utils'
 import { Loading } from '../components/Feedback'
 import {
   TrendingUp, Wallet, Package, Layers, Boxes, AlertTriangle,
-  Users, Truck, DollarSign, ShoppingCart, ArrowDownRight,
+  Users, Truck, DollarSign, ShoppingCart, ArrowDownRight, ArrowUpRight, ChevronRight,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
@@ -118,180 +118,750 @@ export function Dashboard() {
 
   if (loading || !data) return <Loading label="Loading dashboard..." />
 
+  const today = new Date().toLocaleDateString('en-IN', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  })
+
   return (
-    <div>
-      <div className="page-header">
+    <div className="db-root">
+      <style>{`
+        .db-root {
+          --db-bg: var(--n-50, #f8fafc);
+          --db-card: #ffffff;
+          --db-border: var(--border, #e2e8f0);
+          --db-text: var(--n-900, #0f172a);
+          --db-muted: var(--n-500, #64748b);
+          --db-soft: var(--n-400, #94a3b8);
+          animation: dbFade 0.35s ease both;
+        }
+        @keyframes dbFade {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes dbRise {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Page header ── */
+        .db-header {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 16px;
+          flex-wrap: wrap;
+          margin-bottom: 22px;
+        }
+        .db-header h2 {
+          margin: 0;
+          font-size: 24px;
+          font-weight: 800;
+          letter-spacing: -0.02em;
+          color: var(--db-text);
+        }
+        .db-header-sub {
+          margin-top: 4px;
+          font-size: 13.5px;
+          color: var(--db-muted);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .db-header-sub .db-dot {
+          width: 6px; height: 6px; border-radius: 50%;
+          background: #22c55e;
+          box-shadow: 0 0 0 3px rgba(34,197,94,0.15);
+        }
+
+        /* ── Section label ── */
+        .db-section {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin: 26px 0 12px;
+        }
+        .db-section-title {
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.09em;
+          text-transform: uppercase;
+          color: var(--db-muted);
+        }
+        .db-section-line {
+          flex: 1;
+          height: 1px;
+          background: var(--db-border);
+          margin-left: 14px;
+        }
+
+        /* ── Stat cards (KPI) ── */
+        .db-kpi-grid {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 14px;
+        }
+        @media (max-width: 1100px) {
+          .db-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 640px) {
+          .db-kpi-grid { grid-template-columns: 1fr; }
+        }
+        .db-kpi {
+          position: relative;
+          background: var(--db-card);
+          border: 1px solid var(--db-border);
+          border-radius: 14px;
+          padding: 16px 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          overflow: hidden;
+          animation: dbRise 0.4s ease both;
+          transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        }
+        .db-kpi:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+          border-color: #cbd5e1;
+        }
+        .db-kpi-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+        }
+        .db-kpi-label {
+          font-size: 12.5px;
+          font-weight: 600;
+          color: var(--db-muted);
+          letter-spacing: 0.01em;
+        }
+        .db-kpi-icon {
+          width: 38px; height: 38px;
+          border-radius: 11px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .db-kpi-icon svg { width: 19px; height: 19px; }
+        .db-kpi-icon.blue   { background: #eff6ff; color: #2563eb; }
+        .db-kpi-icon.violet { background: #f5f3ff; color: #7c3aed; }
+        .db-kpi-icon.rose   { background: #fff1f2; color: #e11d48; }
+        .db-kpi-icon.green  { background: #ecfdf5; color: #059669; }
+        .db-kpi-icon.amber  { background: #fffbeb; color: #d97706; }
+        .db-kpi-icon.slate  { background: #f1f5f9; color: #475569; }
+        .db-kpi-icon.cyan   { background: #ecfeff; color: #0891b2; }
+        .db-kpi-icon.indigo { background: #eef2ff; color: #4f46e5; }
+
+        .db-kpi-value {
+          font-size: 22px;
+          font-weight: 800;
+          letter-spacing: -0.02em;
+          color: var(--db-text);
+          line-height: 1.1;
+          font-variant-numeric: tabular-nums;
+        }
+        .db-kpi-foot {
+          font-size: 12px;
+          color: var(--db-soft);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-weight: 500;
+        }
+        .db-kpi-foot .db-pos { color: #059669; font-weight: 700; display: inline-flex; align-items: center; gap: 2px; }
+        .db-kpi-foot .db-neg { color: #dc2626; font-weight: 700; display: inline-flex; align-items: center; gap: 2px; }
+
+        /* ── Alert band ── */
+        .db-alert-band {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 14px;
+          margin-top: 6px;
+        }
+        @media (max-width: 1100px) {
+          .db-alert-band { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 640px) {
+          .db-alert-band { grid-template-columns: 1fr; }
+        }
+        .db-alert {
+          background: var(--db-card);
+          border: 1px solid var(--db-border);
+          border-radius: 14px;
+          padding: 14px 16px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          animation: dbRise 0.4s ease both;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        }
+        .db-alert:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+        }
+        .db-alert-icon {
+          width: 40px; height: 40px;
+          border-radius: 11px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+        .db-alert-icon svg { width: 19px; height: 19px; }
+        .db-alert-icon.amber { background: #fffbeb; color: #d97706; }
+        .db-alert-icon.rose  { background: #fff1f2; color: #e11d48; }
+        .db-alert-icon.blue  { background: #eff6ff; color: #2563eb; }
+        .db-alert-icon.slate { background: #f1f5f9; color: #475569; }
+        .db-alert-body { min-width: 0; flex: 1; }
+        .db-alert-label {
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--db-muted);
+          letter-spacing: 0.01em;
+          margin-bottom: 2px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .db-alert-value {
+          font-size: 17px;
+          font-weight: 800;
+          color: var(--db-text);
+          letter-spacing: -0.01em;
+          font-variant-numeric: tabular-nums;
+        }
+
+        /* ── Panel (generic card) ── */
+        .db-panel {
+          background: var(--db-card);
+          border: 1px solid var(--db-border);
+          border-radius: 14px;
+          overflow: hidden;
+          animation: dbRise 0.45s ease both;
+        }
+        .db-panel-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 14px 18px;
+          border-bottom: 1px solid var(--db-border);
+        }
+        .db-panel-title {
+          font-size: 14px;
+          font-weight: 700;
+          color: var(--db-text);
+          letter-spacing: -0.01em;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .db-panel-title svg { color: var(--db-muted); }
+        .db-panel-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 12.5px;
+          font-weight: 600;
+          color: var(--db-muted);
+          text-decoration: none;
+          transition: color 0.18s ease, gap 0.18s ease;
+        }
+        .db-panel-link:hover { color: #4f46e5; gap: 6px; }
+
+        /* ── Table ── */
+        .db-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+        .db-table thead th {
+          text-align: left;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.07em;
+          text-transform: uppercase;
+          color: var(--db-soft);
+          padding: 11px 18px;
+          background: #f8fafc;
+          border-bottom: 1px solid var(--db-border);
+          white-space: nowrap;
+        }
+        .db-table tbody td {
+          padding: 12px 18px;
+          border-bottom: 1px solid #f1f5f9;
+          color: var(--db-text);
+          vertical-align: middle;
+        }
+        .db-table tbody tr:last-child td { border-bottom: none; }
+        .db-table tbody tr { transition: background 0.15s ease; }
+        .db-table tbody tr:hover { background: #f8fafc; }
+        .db-table .db-cell-right { text-align: right; }
+        .db-invoice {
+          font-weight: 600;
+          color: var(--db-text);
+          font-variant-numeric: tabular-nums;
+        }
+        .db-customer {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-width: 0;
+        }
+        .db-avatar {
+          width: 30px; height: 30px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+          color: #4338ca;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 700;
+          font-size: 12px;
+          flex-shrink: 0;
+          letter-spacing: -0.02em;
+        }
+        .db-customer-name {
+          font-weight: 600;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .db-amount {
+          font-weight: 700;
+          font-variant-numeric: tabular-nums;
+          color: var(--db-text);
+        }
+        .db-date {
+          font-size: 12px;
+          color: var(--db-soft);
+        }
+        .db-empty {
+          padding: 40px 20px;
+          text-align: center;
+          color: var(--db-soft);
+          font-size: 13px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+        }
+        .db-empty svg { opacity: 0.4; }
+
+        /* ── Bottom grid ── */
+        .db-bottom-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 16px;
+          margin-top: 16px;
+        }
+        @media (max-width: 900px) {
+          .db-bottom-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ── Status badges ── */
+        .db-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 3px 9px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.02em;
+          text-transform: capitalize;
+          line-height: 1.4;
+        }
+        .db-badge::before {
+          content: '';
+          width: 6px; height: 6px;
+          border-radius: 50%;
+          background: currentColor;
+        }
+        .db-badge.paid    { background: #ecfdf5; color: #047857; }
+        .db-badge.partial { background: #fffbeb; color: #b45309; }
+        .db-badge.unpaid  { background: #fff1f2; color: #be123c; }
+
+        /* ── Category strip ── */
+        .db-cat-strip {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          gap: 12px;
+          padding: 16px 18px;
+        }
+        .db-cat {
+          border: 1px solid var(--db-border);
+          border-radius: 12px;
+          padding: 14px;
+          background: #fbfdff;
+          transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+        }
+        .db-cat:hover {
+          border-color: #c7d2fe;
+          box-shadow: 0 6px 16px rgba(79, 70, 229, 0.06);
+          transform: translateY(-2px);
+        }
+        .db-cat-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 10px;
+        }
+        .db-cat-name {
+          font-size: 13.5px;
+          font-weight: 700;
+          color: var(--db-text);
+          letter-spacing: -0.01em;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .db-cat-type {
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: var(--db-muted);
+          background: #f1f5f9;
+          padding: 3px 7px;
+          border-radius: 6px;
+          flex-shrink: 0;
+        }
+        .db-cat-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+        }
+        .db-cat-stat {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .db-cat-stat-label {
+          font-size: 11px;
+          color: var(--db-soft);
+          font-weight: 500;
+        }
+        .db-cat-stat-value {
+          font-size: 13.5px;
+          font-weight: 700;
+          color: var(--db-text);
+          font-variant-numeric: tabular-nums;
+        }
+      `}</style>
+
+      {/* Header */}
+      <div className="db-header">
         <div>
           <h2>Dashboard</h2>
-          <div className="page-sub">Overview of your business performance</div>
+          <div className="db-header-sub">
+            <span className="db-dot" />
+            {today} · Overview of your business performance
+          </div>
         </div>
         <Link to="/pos" className="btn btn-primary">
           <ShoppingCart size={16} /> New Sale
         </Link>
       </div>
 
-      {/* Today's stats */}
-      <div className="stat-grid mb-4">
-        <div className="stat-card">
-          <div className="stat-icon primary"><TrendingUp /></div>
-          <div className="stat-label">Today's Sales</div>
-          <div className="stat-value">{formatCurrency(data.todaySales)}</div>
+      {/* Today's KPI */}
+      <div className="db-section">
+        <span className="db-section-title">Today's Performance</span>
+        <span className="db-section-line" />
+      </div>
+      <div className="db-kpi-grid">
+        <div className="db-kpi" style={{ animationDelay: '0.02s' }}>
+          <div className="db-kpi-top">
+            <span className="db-kpi-label">Today's Sales</span>
+            <span className="db-kpi-icon blue"><TrendingUp /></span>
+          </div>
+          <div className="db-kpi-value">{formatCurrency(data.todaySales)}</div>
+          <div className="db-kpi-foot">
+            <span className="db-pos"><ArrowUpRight size={12} /> Revenue</span>
+            <span>· Today</span>
+          </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon secondary"><ArrowDownRight /></div>
-          <div className="stat-label">Today's Purchase</div>
-          <div className="stat-value">{formatCurrency(data.todayPurchase)}</div>
+
+        <div className="db-kpi" style={{ animationDelay: '0.06s' }}>
+          <div className="db-kpi-top">
+            <span className="db-kpi-label">Today's Purchase</span>
+            <span className="db-kpi-icon violet"><ArrowDownRight /></span>
+          </div>
+          <div className="db-kpi-value">{formatCurrency(data.todayPurchase)}</div>
+          <div className="db-kpi-foot">
+            <span className="db-neg"><ArrowDownRight size={12} /> Outflow</span>
+            <span>· Today</span>
+          </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon error"><Wallet /></div>
-          <div className="stat-label">Today's Expenses</div>
-          <div className="stat-value">{formatCurrency(data.todayExpenses)}</div>
+
+        <div className="db-kpi" style={{ animationDelay: '0.10s' }}>
+          <div className="db-kpi-top">
+            <span className="db-kpi-label">Today's Expenses</span>
+            <span className="db-kpi-icon rose"><Wallet /></span>
+          </div>
+          <div className="db-kpi-value">{formatCurrency(data.todayExpenses)}</div>
+          <div className="db-kpi-foot">
+            <span className="db-neg"><ArrowDownRight size={12} /> Outflow</span>
+            <span>· Today</span>
+          </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon success"><DollarSign /></div>
-          <div className="stat-label">Today's Profit</div>
-          <div className="stat-value">{formatCurrency(data.todayProfit)}</div>
+
+        <div className="db-kpi" style={{ animationDelay: '0.14s' }}>
+          <div className="db-kpi-top">
+            <span className="db-kpi-label">Today's Profit</span>
+            <span className="db-kpi-icon green"><DollarSign /></span>
+          </div>
+          <div className="db-kpi-value">{formatCurrency(data.todayProfit)}</div>
+          <div className="db-kpi-foot">
+            {data.todayProfit >= 0 ? (
+              <span className="db-pos"><ArrowUpRight size={12} /> Net gain</span>
+            ) : (
+              <span className="db-neg"><ArrowDownRight size={12} /> Net loss</span>
+            )}
+            <span>· Today</span>
+          </div>
         </div>
       </div>
 
-      {/* Stock & product stats */}
-      <div className="stat-grid mb-4">
-        <div className="stat-card">
-          <div className="stat-icon info"><Package /></div>
-          <div className="stat-label">Total Products</div>
-          <div className="stat-value">{formatNumber(data.totalProducts)}</div>
+      {/* Inventory */}
+      <div className="db-section">
+        <span className="db-section-title">Inventory Overview</span>
+        <span className="db-section-line" />
+      </div>
+      <div className="db-kpi-grid">
+        <div className="db-kpi" style={{ animationDelay: '0.16s' }}>
+          <div className="db-kpi-top">
+            <span className="db-kpi-label">Total Products</span>
+            <span className="db-kpi-icon indigo"><Package /></span>
+          </div>
+          <div className="db-kpi-value">{formatNumber(data.totalProducts)}</div>
+          <div className="db-kpi-foot">Active products</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon accent"><Layers /></div>
-          <div className="stat-label">Total Slabs</div>
-          <div className="stat-value">{formatNumber(data.totalSlabs)}</div>
+
+        <div className="db-kpi" style={{ animationDelay: '0.20s' }}>
+          <div className="db-kpi-top">
+            <span className="db-kpi-label">Total Slabs</span>
+            <span className="db-kpi-icon cyan"><Layers /></span>
+          </div>
+          <div className="db-kpi-value">{formatNumber(data.totalSlabs)}</div>
+          <div className="db-kpi-foot">In stock</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon primary"><Boxes /></div>
-          <div className="stat-label">Total Sq.Ft</div>
-          <div className="stat-value">{formatNumber(data.totalSqft)}</div>
+
+        <div className="db-kpi" style={{ animationDelay: '0.24s' }}>
+          <div className="db-kpi-top">
+            <span className="db-kpi-label">Total Sq.Ft</span>
+            <span className="db-kpi-icon blue"><Boxes /></span>
+          </div>
+          <div className="db-kpi-value">{formatNumber(data.totalSqft)}</div>
+          <div className="db-kpi-foot">Remaining area</div>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon success"><DollarSign /></div>
-          <div className="stat-label">Stock Value</div>
-          <div className="stat-value">{formatCurrency(data.totalStockValue)}</div>
+
+        <div className="db-kpi" style={{ animationDelay: '0.28s' }}>
+          <div className="db-kpi-top">
+            <span className="db-kpi-label">Stock Value</span>
+            <span className="db-kpi-icon green"><DollarSign /></span>
+          </div>
+          <div className="db-kpi-value">{formatCurrency(data.totalStockValue)}</div>
+          <div className="db-kpi-foot">At cost price</div>
         </div>
       </div>
 
-      {/* Alerts & dues */}
-      <div className="stat-grid mb-4">
-        <div className="stat-card">
-          <div className="stat-icon warning"><AlertTriangle /></div>
-          <div className="stat-label">Low Stock</div>
-          <div className="stat-value">{formatNumber(data.lowStock)}</div>
+      {/* Alerts & Dues */}
+      <div className="db-section">
+        <span className="db-section-title">Alerts & Dues</span>
+        <span className="db-section-line" />
+      </div>
+      <div className="db-alert-band">
+        <div className="db-alert" style={{ animationDelay: '0.30s' }}>
+          <div className="db-alert-icon amber"><AlertTriangle /></div>
+          <div className="db-alert-body">
+            <div className="db-alert-label">Low Stock Items</div>
+            <div className="db-alert-value">{formatNumber(data.lowStock)}</div>
+          </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon error"><AlertTriangle /></div>
-          <div className="stat-label">Out of Stock</div>
-          <div className="stat-value">{formatNumber(data.outOfStock)}</div>
+        <div className="db-alert" style={{ animationDelay: '0.33s' }}>
+          <div className="db-alert-icon rose"><AlertTriangle /></div>
+          <div className="db-alert-body">
+            <div className="db-alert-label">Out of Stock</div>
+            <div className="db-alert-value">{formatNumber(data.outOfStock)}</div>
+          </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon info"><Users /></div>
-          <div className="stat-label">Customer Due</div>
-          <div className="stat-value">{formatCurrency(data.customerDue)}</div>
+        <div className="db-alert" style={{ animationDelay: '0.36s' }}>
+          <div className="db-alert-icon blue"><Users /></div>
+          <div className="db-alert-body">
+            <div className="db-alert-label">Customer Due</div>
+            <div className="db-alert-value">{formatCurrency(data.customerDue)}</div>
+          </div>
         </div>
-        <div className="stat-card">
-          <div className="stat-icon secondary"><Truck /></div>
-          <div className="stat-label">Supplier Due</div>
-          <div className="stat-value">{formatCurrency(data.supplierDue)}</div>
+        <div className="db-alert" style={{ animationDelay: '0.39s' }}>
+          <div className="db-alert-icon slate"><Truck /></div>
+          <div className="db-alert-body">
+            <div className="db-alert-label">Supplier Due</div>
+            <div className="db-alert-value">{formatCurrency(data.supplierDue)}</div>
+          </div>
         </div>
       </div>
 
-      {/* Category-wise stock */}
-      <div className="card mb-4">
-        <div className="card-header">
-          <div className="card-title">Category-wise Stock</div>
+      {/* Category-wise Stock — clean strip cards */}
+      <div className="db-section">
+        <span className="db-section-title">Category-wise Stock</span>
+        <span className="db-section-line" />
+      </div>
+      <div className="db-panel" style={{ animationDelay: '0.42s' }}>
+        <div className="db-panel-head">
+          <div className="db-panel-title">
+            <Boxes size={16} /> Categories
+            <span className="db-badge" style={{ background: '#eef2ff', color: '#4338ca', marginLeft: 6 }}>
+              {data.categoryStats.length}
+            </span>
+          </div>
         </div>
-        <div className="card-body" style={{ padding: 0 }}>
-          <div className="table-wrap" style={{ border: 'none' }}>
-            <table className="data-table">
+        {data.categoryStats.length === 0 ? (
+          <div className="db-empty">
+            <Boxes size={26} />
+            <div>No categories yet</div>
+          </div>
+        ) : (
+          <div className="db-cat-strip">
+            {data.categoryStats.map((cat) => (
+              <div key={cat.name} className="db-cat">
+                <div className="db-cat-top">
+                  <div className="db-cat-name" title={cat.name}>{cat.name}</div>
+                  <span className="db-cat-type">{cat.inventory_type}</span>
+                </div>
+                <div className="db-cat-grid">
+                  <div className="db-cat-stat">
+                    <span className="db-cat-stat-label">Total Count</span>
+                    <span className="db-cat-stat-value">{formatNumber(cat.total_count)}</span>
+                  </div>
+                  <div className="db-cat-stat">
+                    <span className="db-cat-stat-label">Available</span>
+                    <span className="db-cat-stat-value">{formatNumber(cat.available_count)}</span>
+                  </div>
+                  {cat.inventory_type !== 'piece' && (
+                    <>
+                      <div className="db-cat-stat">
+                        <span className="db-cat-stat-label">Total Sq.Ft</span>
+                        <span className="db-cat-stat-value">{formatNumber(cat.total_sqft)}</span>
+                      </div>
+                      <div className="db-cat-stat">
+                        <span className="db-cat-stat-label">Avail. Sq.Ft</span>
+                        <span className="db-cat-stat-value">{formatNumber(cat.available_sqft)}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Bottom: Recent Sales & Purchases — properly designed */}
+      <div className="db-section">
+        <span className="db-section-title">Recent Activity</span>
+        <span className="db-section-line" />
+      </div>
+      <div className="db-bottom-grid">
+        {/* Recent Sales */}
+        <div className="db-panel" style={{ animationDelay: '0.46s' }}>
+          <div className="db-panel-head">
+            <div className="db-panel-title">
+              <TrendingUp size={16} /> Recent Sales
+            </div>
+            <Link to="/sales" className="db-panel-link">
+              View All <ChevronRight size={14} />
+            </Link>
+          </div>
+          {data.recentSales.length === 0 ? (
+            <div className="db-empty">
+              <ShoppingCart size={26} />
+              <div>No sales yet</div>
+            </div>
+          ) : (
+            <table className="db-table">
               <thead>
                 <tr>
-                  <th>Category</th>
-                  <th>Inventory Type</th>
-                  <th className="text-right">Total Count</th>
-                  <th className="text-right">Total Sq.Ft</th>
-                  <th className="text-right">Available Count</th>
-                  <th className="text-right">Available Sq.Ft</th>
+                  <th>Invoice</th>
+                  <th>Customer</th>
+                  <th className="db-cell-right">Amount</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
-                {data.categoryStats.map((cat) => (
-                  <tr key={cat.name}>
-                    <td className="font-semibold">{cat.name}</td>
-                    <td><span className="badge badge-neutral">{cat.inventory_type}</span></td>
-                    <td className="text-right">{formatNumber(cat.total_count)}</td>
-                    <td className="text-right">{cat.inventory_type !== 'piece' ? formatNumber(cat.total_sqft) : '-'}</td>
-                    <td className="text-right">{formatNumber(cat.available_count)}</td>
-                    <td className="text-right">{cat.inventory_type !== 'piece' ? formatNumber(cat.available_sqft) : '-'}</td>
+                {data.recentSales.map((s) => (
+                  <tr key={s.id}>
+                    <td>
+                      <div className="db-invoice">{s.invoice_number}</div>
+                      <div className="db-date">
+                        {new Date(s.sale_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="db-customer">
+                        <div className="db-avatar">{s.customer_name.charAt(0).toUpperCase()}</div>
+                        <span className="db-customer-name">{s.customer_name}</span>
+                      </div>
+                    </td>
+                    <td className="db-cell-right">
+                      <span className="db-amount">{formatCurrency(s.grand_total)}</span>
+                    </td>
+                    <td>
+                      <span className={`db-badge ${s.payment_status}`}>{s.payment_status}</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent activity */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: 16 }}>
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">Recent Sales</div>
-            <Link to="/sales" className="btn btn-ghost btn-sm">View All</Link>
-          </div>
-          <div className="card-body" style={{ padding: 0 }}>
-            {data.recentSales.length === 0 ? (
-              <div className="empty-state" style={{ padding: '24px' }}><p>No sales yet</p></div>
-            ) : (
-              <table className="data-table">
-                <thead>
-                  <tr><th>Invoice</th><th>Customer</th><th className="text-right">Amount</th><th>Status</th></tr>
-                </thead>
-                <tbody>
-                  {data.recentSales.map((s) => (
-                    <tr key={s.id}>
-                      <td className="font-semibold">{s.invoice_number}</td>
-                      <td>{s.customer_name}</td>
-                      <td className="text-right">{formatCurrency(s.grand_total)}</td>
-                      <td><span className={`badge ${s.payment_status === 'paid' ? 'badge-success' : s.payment_status === 'partial' ? 'badge-warning' : 'badge-danger'}`}>{s.payment_status}</span></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+          )}
         </div>
 
-        <div className="card">
-          <div className="card-header">
-            <div className="card-title">Recent Purchases</div>
-            <Link to="/purchases" className="btn btn-ghost btn-sm">View All</Link>
+        {/* Recent Purchases */}
+        <div className="db-panel" style={{ animationDelay: '0.50s' }}>
+          <div className="db-panel-head">
+            <div className="db-panel-title">
+              <Truck size={16} /> Recent Purchases
+            </div>
+            <Link to="/purchases" className="db-panel-link">
+              View All <ChevronRight size={14} />
+            </Link>
           </div>
-          <div className="card-body" style={{ padding: 0 }}>
-            {data.recentPurchases.length === 0 ? (
-              <div className="empty-state" style={{ padding: '24px' }}><p>No purchases yet</p></div>
-            ) : (
-              <table className="data-table">
-                <thead>
-                  <tr><th>Invoice</th><th>Supplier</th><th className="text-right">Amount</th></tr>
-                </thead>
-                <tbody>
-                  {data.recentPurchases.map((p) => (
-                    <tr key={p.id}>
-                      <td className="font-semibold">{p.invoice_number}</td>
-                      <td>{p.supplier_name}</td>
-                      <td className="text-right">{formatCurrency(p.total_amount)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+          {data.recentPurchases.length === 0 ? (
+            <div className="db-empty">
+              <Truck size={26} />
+              <div>No purchases yet</div>
+            </div>
+          ) : (
+            <table className="db-table">
+              <thead>
+                <tr>
+                  <th>Invoice</th>
+                  <th>Supplier</th>
+                  <th className="db-cell-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.recentPurchases.map((p) => (
+                  <tr key={p.id}>
+                    <td>
+                      <div className="db-invoice">{p.invoice_number}</div>
+                      <div className="db-date">
+                        {new Date(p.purchase_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="db-customer">
+                        <div className="db-avatar" style={{ background: 'linear-gradient(135deg, #fef3c7, #fde68a)', color: '#b45309' }}>
+                          {p.supplier_name.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="db-customer-name">{p.supplier_name}</span>
+                      </div>
+                    </td>
+                    <td className="db-cell-right">
+                      <span className="db-amount">{formatCurrency(p.total_amount)}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>

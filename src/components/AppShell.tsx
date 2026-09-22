@@ -24,7 +24,7 @@ const navItems = [
     { to: '/inventory', label: 'Inventory', icon: Warehouse },
   ]},
   { section: 'Sales', items: [
-    { to: '/pos', label: 'POS / Billing', icon: ShoppingCart },
+    { to: '/pos', label: 'Customer Sales / Billing', icon: ShoppingCart },
     { to: '/sales', label: 'Sales History', icon: Receipt },
     { to: '/quotations', label: 'Quotations', icon: FileText },
     { to: '/sales-returns', label: 'Sales Returns', icon: Undo2 },
