@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { Loading } from '../components/Feedback'
 import { formatCurrency, formatDate, formatNumber } from '../lib/utils'
-import { TrendingUp, TrendingDown, Wallet, DollarSign, Package, Users, Truck } from 'lucide-react'
+import { exportToExcel } from '../lib/excelExport'
+import { TrendingUp, TrendingDown, Wallet, DollarSign, Package, Users, Truck, Download, BarChart3 } from 'lucide-react'
 
 export function Reports() {
   const [loading, setLoading] = useState(true)
@@ -24,11 +25,7 @@ export function Reports() {
         .lte('sale.sale_date', to)
 
       const byProduct: Record<string, { description: string; unit: string; quantity: number; sqft: number; revenue: number; cost: number; profit: number }> = {}
-      let totalRevenue = 0
-      let totalCost = 0
-      let totalProfit = 0
-      let totalQuantity = 0
-      let totalSqft = 0
+      let totalRevenue = 0, totalCost = 0, totalProfit = 0, totalQuantity = 0, totalSqft = 0
       for (const item of items ?? []) {
         const key = item.product_id ?? item.description ?? 'Unknown product'
         if (!byProduct[key]) byProduct[key] = { description: item.description ?? 'Unknown product', unit: item.unit ?? '-', quantity: 0, sqft: 0, revenue: 0, cost: 0, profit: 0 }
@@ -107,6 +104,66 @@ export function Reports() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  const handleExportExcel = () => {
+    if (!data) return
+    let rows: Record<string, unknown>[] = []
+    let filename = 'report'
+
+    if (data.type === 'sales_summary') {
+      filename = `sales_summary_${dateFrom || 'all'}_to_${dateTo || 'today'}`
+      rows = data.sales.map((s: any) => ({
+        Invoice: s.invoice_number, Date: formatDate(s.sale_date), Customer: s.customer_name ?? 'Walk-in',
+        Total: Number(s.grand_total), Paid: Number(s.paid_amount), Due: Number(s.due_amount), Status: s.payment_status,
+      }))
+    } else if (data.type === 'daily_product_sales') {
+      filename = `product_sales_${dateFrom || 'all'}_to_${dateTo || 'today'}`
+      rows = data.rows.map((r: any) => ({
+        Product: r.description, Unit: r.unit, Quantity: r.quantity, 'Sq.Ft': r.sqft,
+        Revenue: r.revenue, Cost: r.cost, Profit: r.profit,
+      }))
+    } else if (data.type === 'purchase_summary') {
+      filename = `purchase_summary_${dateFrom || 'all'}_to_${dateTo || 'today'}`
+      rows = data.purchases.map((p: any) => ({
+        Invoice: p.invoice_number, Date: formatDate(p.purchase_date), Supplier: p.supplier?.name ?? '-',
+        Total: Number(p.total_amount), Paid: Number(p.paid_amount), Due: Number(p.due_amount),
+      }))
+    } else if (data.type === 'profit') {
+      filename = `profit_analysis_${dateFrom || 'all'}_to_${dateTo || 'today'}`
+      rows = Object.entries(data.byCategory).map(([cat, v]: [string, any]) => ({
+        Category: cat, Revenue: v.revenue, Cost: v.cost, Profit: v.profit,
+        Margin: v.revenue > 0 ? `${(v.profit / v.revenue * 100).toFixed(1)}%` : '-',
+      }))
+    } else if (data.type === 'stock_valuation') {
+      filename = 'stock_valuation'
+      rows = data.rows.map((p: any) => ({
+        Product: p.name, Category: p.category?.name ?? '-', Stock: p.stock,
+        'Cost Price': Number(p.cost_price), Value: p.value,
+      }))
+    } else if (data.type === 'customer_due') {
+      filename = 'customer_dues'
+      rows = data.customers.map((c: any) => ({
+        Customer: c.name, Mobile: c.mobile ?? '-', Type: c.customer_type,
+        'Total Purchase': Number(c.total_purchase), Paid: Number(c.total_paid), Due: Number(c.total_due),
+      }))
+    } else if (data.type === 'supplier_due') {
+      filename = 'supplier_dues'
+      rows = data.suppliers.map((s: any) => ({
+        Supplier: s.name, Company: s.company_name ?? '-', Mobile: s.mobile ?? '-',
+        'Total Purchase': Number(s.total_purchase), Paid: Number(s.total_paid), Due: Number(s.total_due),
+      }))
+    } else if (data.type === 'expenses') {
+      filename = `expenses_${dateFrom || 'all'}_to_${dateTo || 'today'}`
+      rows = data.expenses.map((e: any) => ({
+        Date: formatDate(e.expense_date), Category: e.category_name ?? '-',
+        Description: e.description ?? '-', Amount: Number(e.amount),
+      }))
+    }
+
+    if (rows.length > 0) {
+      exportToExcel(rows, filename, data.type)
+    }
+  }
+
   return (
     <div>
       <div className="page-header">
@@ -114,19 +171,27 @@ export function Reports() {
           <h2>Reports</h2>
           <div className="page-sub">Business analytics and insights</div>
         </div>
+        {data && !loading && (
+          <button className="btn btn-primary" onClick={handleExportExcel}>
+            <Download size={16} /> Export Excel
+          </button>
+        )}
       </div>
 
       <div className="filters-bar">
-        <select className="form-select" value={reportType} onChange={(e) => setReportType(e.target.value)}>
-          <option value="daily_product_sales">Daily Product Sales</option>
-          <option value="sales_summary">Sales Summary</option>
-          <option value="purchase_summary">Purchase Summary</option>
-          <option value="profit">Profit Analysis</option>
-          <option value="stock_valuation">Stock Valuation</option>
-          <option value="customer_due">Customer Dues</option>
-          <option value="supplier_due">Supplier Dues</option>
-          <option value="expenses">Expense Report</option>
-        </select>
+        <div className="search-input" style={{ minWidth: 200 }}>
+          <BarChart3 />
+          <select className="form-select" value={reportType} onChange={(e) => setReportType(e.target.value)}>
+            <option value="daily_product_sales">Daily Product Sales</option>
+            <option value="sales_summary">Sales Summary</option>
+            <option value="purchase_summary">Purchase Summary</option>
+            <option value="profit">Profit Analysis</option>
+            <option value="stock_valuation">Stock Valuation</option>
+            <option value="customer_due">Customer Dues</option>
+            <option value="supplier_due">Supplier Dues</option>
+            <option value="expenses">Expense Report</option>
+          </select>
+        </div>
         {reportType !== 'stock_valuation' && reportType !== 'customer_due' && reportType !== 'supplier_due' && (
           <>
             <input className="form-input" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} title="From date" />
@@ -146,7 +211,7 @@ export function Reports() {
               </div>
               <div className="table-wrap"><table className="data-table">
                 <thead><tr><th>Invoice</th><th>Date</th><th>Customer</th><th className="text-right">Total</th><th className="text-right">Paid</th><th className="text-right">Due</th><th>Status</th></tr></thead>
-                <tbody>{data.sales.map((s: any) => (<tr key={s.id}><td className="font-semibold">{s.invoice_number}</td><td>{formatDate(s.sale_date)}</td><td>{s.customer_name ?? 'Walk-in'}</td><td className="text-right">{formatCurrency(s.grand_total)}</td><td className="text-right">{formatCurrency(s.paid_amount)}</td><td className="text-right">{formatCurrency(s.due_amount)}</td><td><span className={`badge ${s.payment_status === 'paid' ? 'badge-success' : s.payment_status === 'partial' ? 'badge-warning' : 'badge-danger'}`}>{s.payment_status}</span></td></tr>))}</tbody>
+                <tbody>{data.sales.map((s: any) => (<tr key={s.id} className={Number(s.due_amount) > 0 ? 'row-highlight-warning' : ''}><td className="font-semibold">{s.invoice_number}</td><td>{formatDate(s.sale_date)}</td><td>{s.customer_name ?? 'Walk-in'}</td><td className="text-right font-bold">{formatCurrency(s.grand_total)}</td><td className="text-right" style={{ color: 'var(--success-600)', fontWeight: 600 }}>{formatCurrency(s.paid_amount)}</td><td className="text-right" style={{ color: Number(s.due_amount) > 0 ? 'var(--error-600)' : 'var(--text-muted)', fontWeight: Number(s.due_amount) > 0 ? 700 : 400 }}>{formatCurrency(s.due_amount)}</td><td><span className={`badge ${s.payment_status === 'paid' ? 'badge-success' : s.payment_status === 'partial' ? 'badge-warning' : 'badge-danger'}`}>{s.payment_status}</span></td></tr>))}</tbody>
               </table></div>
             </>
           )}
@@ -161,7 +226,7 @@ export function Reports() {
               </div>
               <div className="table-wrap"><table className="data-table">
                 <thead><tr><th>Product</th><th>Unit</th><th className="text-right">Quantity</th><th className="text-right">Sq.Ft</th><th className="text-right">Revenue</th><th className="text-right">Cost</th><th className="text-right">Profit</th></tr></thead>
-                <tbody>{data.rows.map((row: any) => (<tr key={row.description}><td className="font-semibold">{row.description}</td><td>{row.unit}</td><td className="text-right">{formatNumber(row.quantity)}</td><td className="text-right">{row.sqft > 0 ? formatNumber(row.sqft) : '-'}</td><td className="text-right">{formatCurrency(row.revenue)}</td><td className="text-right">{formatCurrency(row.cost)}</td><td className="text-right" style={{ color: 'var(--success-600)', fontWeight: 600 }}>{formatCurrency(row.profit)}</td></tr>))}</tbody>
+                <tbody>{data.rows.map((row: any) => (<tr key={row.description}><td className="font-semibold">{row.description}</td><td>{row.unit}</td><td className="text-right">{formatNumber(row.quantity)}</td><td className="text-right">{row.sqft > 0 ? formatNumber(row.sqft) : '-'}</td><td className="text-right font-bold">{formatCurrency(row.revenue)}</td><td className="text-right" style={{ color: 'var(--error-600)' }}>{formatCurrency(row.cost)}</td><td className="text-right" style={{ color: 'var(--success-600)', fontWeight: 700 }}>{formatCurrency(row.profit)}</td></tr>))}</tbody>
               </table></div>
             </>
           )}
@@ -175,7 +240,7 @@ export function Reports() {
               </div>
               <div className="table-wrap"><table className="data-table">
                 <thead><tr><th>Invoice</th><th>Date</th><th>Supplier</th><th className="text-right">Total</th><th className="text-right">Paid</th><th className="text-right">Due</th></tr></thead>
-                <tbody>{data.purchases.map((p: any) => (<tr key={p.id}><td className="font-semibold">{p.invoice_number}</td><td>{formatDate(p.purchase_date)}</td><td>{p.supplier?.name ?? '-'}</td><td className="text-right">{formatCurrency(p.total_amount)}</td><td className="text-right">{formatCurrency(p.paid_amount)}</td><td className="text-right">{formatCurrency(p.due_amount)}</td></tr>))}</tbody>
+                <tbody>{data.purchases.map((p: any) => (<tr key={p.id} className={Number(p.due_amount) > 0 ? 'row-highlight-warning' : ''}><td className="font-semibold">{p.invoice_number}</td><td>{formatDate(p.purchase_date)}</td><td>{p.supplier?.name ?? '-'}</td><td className="text-right font-bold">{formatCurrency(p.total_amount)}</td><td className="text-right" style={{ color: 'var(--success-600)', fontWeight: 600 }}>{formatCurrency(p.paid_amount)}</td><td className="text-right" style={{ color: Number(p.due_amount) > 0 ? 'var(--error-600)' : 'var(--text-muted)', fontWeight: Number(p.due_amount) > 0 ? 700 : 400 }}>{formatCurrency(p.due_amount)}</td></tr>))}</tbody>
               </table></div>
             </>
           )}
@@ -191,7 +256,7 @@ export function Reports() {
                 <div className="card-header"><div className="card-title">Category-wise Profit</div></div>
                 <div className="table-wrap" style={{ border: 'none' }}><table className="data-table">
                   <thead><tr><th>Category</th><th className="text-right">Revenue</th><th className="text-right">Cost</th><th className="text-right">Profit</th><th className="text-right">Margin</th></tr></thead>
-                  <tbody>{Object.entries(data.byCategory).map(([cat, v]: [string, any]) => (<tr key={cat}><td className="font-semibold">{cat}</td><td className="text-right">{formatCurrency(v.revenue)}</td><td className="text-right">{formatCurrency(v.cost)}</td><td className="text-right" style={{ color: 'var(--success-600)', fontWeight: 600 }}>{formatCurrency(v.profit)}</td><td className="text-right">{v.revenue > 0 ? `${(v.profit / v.revenue * 100).toFixed(1)}%` : '-'}</td></tr>))}</tbody>
+                  <tbody>{Object.entries(data.byCategory).map(([cat, v]: [string, any]) => (<tr key={cat} className="row-highlight-success"><td className="font-semibold">{cat}</td><td className="text-right font-bold">{formatCurrency(v.revenue)}</td><td className="text-right" style={{ color: 'var(--error-600)' }}>{formatCurrency(v.cost)}</td><td className="text-right" style={{ color: 'var(--success-600)', fontWeight: 700 }}>{formatCurrency(v.profit)}</td><td className="text-right" style={{ fontWeight: 600 }}>{v.revenue > 0 ? `${(v.profit / v.revenue * 100).toFixed(1)}%` : '-'}</td></tr>))}</tbody>
                 </table></div>
               </div>
             </>
@@ -204,7 +269,7 @@ export function Reports() {
               </div>
               <div className="table-wrap"><table className="data-table">
                 <thead><tr><th>Product</th><th>Category</th><th className="text-right">Stock</th><th className="text-right">Cost Price</th><th className="text-right">Value</th></tr></thead>
-                <tbody>{data.rows.map((p: any) => (<tr key={p.id}><td className="font-semibold">{p.name}</td><td>{p.category?.name ?? '-'}</td><td className="text-right">{p.stock}</td><td className="text-right">{formatCurrency(p.cost_price)}</td><td className="text-right">{formatCurrency(p.value)}</td></tr>))}</tbody>
+                <tbody>{data.rows.map((p: any) => (<tr key={p.id}><td className="font-semibold">{p.name}</td><td>{p.category?.name ?? '-'}</td><td className="text-right" style={{ fontWeight: 600 }}>{p.stock}</td><td className="text-right">{formatCurrency(p.cost_price)}</td><td className="text-right font-bold" style={{ color: 'var(--primary-600)' }}>{formatCurrency(p.value)}</td></tr>))}</tbody>
               </table></div>
             </>
           )}
@@ -216,7 +281,7 @@ export function Reports() {
               </div>
               <div className="table-wrap"><table className="data-table">
                 <thead><tr><th>Customer</th><th>Mobile</th><th>Type</th><th className="text-right">Total Purchase</th><th className="text-right">Paid</th><th className="text-right">Due</th></tr></thead>
-                <tbody>{data.customers.map((c: any) => (<tr key={c.id}><td className="font-semibold">{c.name}</td><td>{c.mobile ?? '-'}</td><td><span className="badge badge-neutral">{c.customer_type}</span></td><td className="text-right">{formatCurrency(c.total_purchase)}</td><td className="text-right">{formatCurrency(c.total_paid)}</td><td className="text-right" style={{ color: 'var(--error-600)', fontWeight: 600 }}>{formatCurrency(c.total_due)}</td></tr>))}</tbody>
+                <tbody>{data.customers.map((c: any) => (<tr key={c.id} className="row-highlight-danger"><td className="font-semibold">{c.name}</td><td>{c.mobile ?? '-'}</td><td><span className="badge badge-neutral">{c.customer_type}</span></td><td className="text-right">{formatCurrency(c.total_purchase)}</td><td className="text-right" style={{ color: 'var(--success-600)', fontWeight: 600 }}>{formatCurrency(c.total_paid)}</td><td className="text-right" style={{ color: 'var(--error-600)', fontWeight: 700 }}>{formatCurrency(c.total_due)}</td></tr>))}</tbody>
               </table></div>
             </>
           )}
@@ -228,7 +293,7 @@ export function Reports() {
               </div>
               <div className="table-wrap"><table className="data-table">
                 <thead><tr><th>Supplier</th><th>Company</th><th>Mobile</th><th className="text-right">Total Purchase</th><th className="text-right">Paid</th><th className="text-right">Due</th></tr></thead>
-                <tbody>{data.suppliers.map((s: any) => (<tr key={s.id}><td className="font-semibold">{s.name}</td><td>{s.company_name ?? '-'}</td><td>{s.mobile ?? '-'}</td><td className="text-right">{formatCurrency(s.total_purchase)}</td><td className="text-right">{formatCurrency(s.total_paid)}</td><td className="text-right" style={{ color: 'var(--error-600)', fontWeight: 600 }}>{formatCurrency(s.total_due)}</td></tr>))}</tbody>
+                <tbody>{data.suppliers.map((s: any) => (<tr key={s.id} className="row-highlight-danger"><td className="font-semibold">{s.name}</td><td>{s.company_name ?? '-'}</td><td>{s.mobile ?? '-'}</td><td className="text-right">{formatCurrency(s.total_purchase)}</td><td className="text-right" style={{ color: 'var(--success-600)', fontWeight: 600 }}>{formatCurrency(s.total_paid)}</td><td className="text-right" style={{ color: 'var(--error-600)', fontWeight: 700 }}>{formatCurrency(s.total_due)}</td></tr>))}</tbody>
               </table></div>
             </>
           )}
@@ -242,12 +307,12 @@ export function Reports() {
                 <div className="card-header"><div className="card-title">By Category</div></div>
                 <div className="table-wrap" style={{ border: 'none' }}><table className="data-table">
                   <thead><tr><th>Category</th><th className="text-right">Amount</th></tr></thead>
-                  <tbody>{Object.entries(data.byCategory).map(([cat, amt]: [string, any]) => (<tr key={cat}><td className="font-semibold">{cat}</td><td className="text-right">{formatCurrency(amt)}</td></tr>))}</tbody>
+                  <tbody>{Object.entries(data.byCategory).map(([cat, amt]: [string, any]) => (<tr key={cat} className="row-highlight-warning"><td className="font-semibold">{cat}</td><td className="text-right font-bold" style={{ color: 'var(--error-600)' }}>{formatCurrency(amt)}</td></tr>))}</tbody>
                 </table></div>
               </div>
               <div className="table-wrap"><table className="data-table">
                 <thead><tr><th>Date</th><th>Category</th><th>Description</th><th className="text-right">Amount</th></tr></thead>
-                <tbody>{data.expenses.map((e: any) => (<tr key={e.id}><td>{formatDate(e.expense_date)}</td><td><span className="badge badge-neutral">{e.category_name}</span></td><td>{e.description ?? '-'}</td><td className="text-right">{formatCurrency(e.amount)}</td></tr>))}</tbody>
+                <tbody>{data.expenses.map((e: any) => (<tr key={e.id}><td>{formatDate(e.expense_date)}</td><td><span className="badge badge-neutral">{e.category_name}</span></td><td>{e.description ?? '-'}</td><td className="text-right font-bold" style={{ color: 'var(--error-600)' }}>{formatCurrency(e.amount)}</td></tr>))}</tbody>
               </table></div>
             </>
           )}
