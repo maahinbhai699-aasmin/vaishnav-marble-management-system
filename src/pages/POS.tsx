@@ -7,7 +7,10 @@ import { formatCurrency, formatNumber, nextInvoiceNumber, getDefaultUnitForCateg
 import { businessProfile } from '../lib/business'
 import { recordStockMovement, sellSlabFull, sellSlabPartial, updateCustomerTotals } from '../lib/stockOps'
 import type { Product, Customer, Slab, SaleItem } from '../lib/types'
-import { Search, ShoppingCart, Plus, Trash2, X, UserPlus, Printer, FileText, MessageCircle } from 'lucide-react'
+import {
+  Search, ShoppingCart, Plus, Trash2, X, UserPlus, Printer, FileText, MessageCircle,
+  User, Phone, MapPin, Check, PackageSearch, UserRound,
+} from 'lucide-react'
 
 interface CartItem {
   product_id: string
@@ -36,6 +39,7 @@ export function POS() {
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [customerSearch, setCustomerSearch] = useState('')
   const [showCustomerModal, setShowCustomerModal] = useState(false)
+  const [showNewCustomerForm, setShowNewCustomerForm] = useState(false)
   const [showSlabModal, setShowSlabModal] = useState<Product | null>(null)
   const [charges, setCharges] = useState({ cutting: '', polishing: '', loading: '', delivery: '', other: '', discount: '' })
   const [paidAmount, setPaidAmount] = useState('')
@@ -45,6 +49,7 @@ export function POS() {
   const [saving, setSaving] = useState(false)
   const [showInvoice, setShowInvoice] = useState<string | null>(null)
   const [newCustomer, setNewCustomer] = useState({ name: '', mobile: '', address: '', customer_type: 'retail' })
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -62,19 +67,36 @@ export function POS() {
   useEffect(() => { fetchData() }, [fetchData])
 
   const filteredProducts = useMemo(() => {
-    if (!search) return products.slice(0, 20)
+    if (!search) return products.slice(0, 60)
     const q = search.toLowerCase()
     return products.filter((p) =>
       p.name.toLowerCase().includes(q) ||
       (p.sku ?? '').toLowerCase().includes(q) ||
       (p.barcode ?? '').toLowerCase().includes(q)
-    ).slice(0, 30)
+    ).slice(0, 60)
   }, [products, search])
 
+  const visibleProducts = useMemo(() => {
+    if (categoryFilter === 'all') return filteredProducts
+    return filteredProducts.filter((p) => (p.category?.id ?? 'uncategorized') === categoryFilter)
+  }, [filteredProducts, categoryFilter])
+
+  const categories = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; count: number }>()
+    products.forEach((p) => {
+      const id = p.category?.id ?? 'uncategorized'
+      const name = p.category?.name ?? 'Uncategorized'
+      const existing = map.get(id)
+      if (existing) existing.count++
+      else map.set(id, { id, name, count: 1 })
+    })
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name))
+  }, [products])
+
   const filteredCustomers = useMemo(() => {
-    if (!customerSearch) return customers.slice(0, 10)
+    if (!customerSearch) return customers.slice(0, 20)
     const q = customerSearch.toLowerCase()
-    return customers.filter((c) => c.name.toLowerCase().includes(q) || (c.mobile ?? '').includes(q)).slice(0, 10)
+    return customers.filter((c) => c.name.toLowerCase().includes(q) || (c.mobile ?? '').includes(q)).slice(0, 20)
   }, [customers, customerSearch])
 
   const subtotal = useMemo(() => cart.reduce((s, item) => s + item.amount, 0), [cart])
@@ -176,6 +198,7 @@ export function POS() {
       setCustomer(data as Customer)
       setNewCustomer({ name: '', mobile: '', address: '', customer_type: 'retail' })
       setShowCustomerModal(false)
+      setShowNewCustomerForm(false)
       toast('Customer created')
     }
   }
@@ -212,7 +235,6 @@ export function POS() {
 
       if (saleError || !sale) { toast(`Error: ${saleError?.message}`, 'error'); setSaving(false); return }
 
-      // Insert sale items
       for (const item of cart) {
         const costAmount = item.cost_amount
         const grossProfit = item.amount - costAmount
@@ -233,7 +255,6 @@ export function POS() {
           gross_profit: grossProfit,
         })
 
-        // Update stock
         const invType = item.product.category?.inventory_type ?? 'piece'
         if (item.slab_id) {
           const slab = slabs.find((s) => s.id === item.slab_id)
@@ -263,7 +284,6 @@ export function POS() {
         }
       }
 
-      // Record payment if paid
       if (paid > 0) {
         await supabase.from('payments').insert({
           customer_id: customer?.id ?? null,
@@ -274,14 +294,12 @@ export function POS() {
         })
       }
 
-      // Update customer totals
       if (customer) {
         await updateCustomerTotals(customer.id, grandTotal, paid)
       }
 
       toast('Sale completed successfully')
       setShowInvoice(sale.id)
-      // Reset
       setCart([])
       setCustomer(null)
       setCharges({ cutting: '', polishing: '', loading: '', delivery: '', other: '', discount: '' })
@@ -305,148 +323,271 @@ export function POS() {
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: 'minmax(0, 1fr) 420px',
-        gap: 20,
-        alignItems: 'start',
-        minHeight: 'calc(100vh - 120px)',
+        gridTemplateColumns: 'minmax(0, 1fr) 440px',
+        gap: 18,
+        alignItems: 'stretch',
+        height: 'calc(100vh - 120px)',
+        minHeight: 620,
       }}
     >
-      {/* ───────────── Product selection ───────────── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-end',
-            gap: 16,
-            flexWrap: 'wrap',
-          }}
-        >
+      {/* ═════════════ LEFT: PRODUCT SELECTION ═════════════ */}
+      <section
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+          minWidth: 0,
+          height: '100%',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 16, flexWrap: 'wrap' }}>
           <div>
             <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, letterSpacing: '-0.01em' }}>POS / Billing</h2>
             <div className="text-muted text-sm" style={{ marginTop: 2 }}>
-              Search and add products to create a sale
+              Search or tap a product to add it to the cart
             </div>
           </div>
           <span className="badge badge-success" style={{ padding: '6px 12px', fontSize: 12 }}>
-            {filteredProducts.length} products
+            {visibleProducts.length} shown · {products.length} total
           </span>
         </div>
 
-        <div className="search-input" style={{ width: '100%' }}>
-          <Search size={18} />
+        {/* Search */}
+        <div
+          className="search-input"
+          style={{
+            width: '100%',
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
+          <Search size={18} style={{ flexShrink: 0, opacity: 0.6 }} />
           <input
             className="form-input"
-            style={{ width: '100%' }}
+            style={{ width: '100%', border: 'none', background: 'transparent', outline: 'none' }}
             placeholder="Search by product name, SKU, or barcode..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             autoFocus
           />
+          {search && (
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setSearch('')}
+              style={{ padding: 4, flexShrink: 0 }}
+              title="Clear search"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
 
+        {/* Category chips */}
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-            gap: 12,
-            overflow: 'auto',
-            paddingRight: 4,
-            paddingBottom: 8,
+            display: 'flex',
+            gap: 8,
+            overflowX: 'auto',
+            paddingBottom: 4,
+            marginBottom: 2,
+            scrollbarWidth: 'thin',
           }}
         >
-          {filteredProducts.map((p) => {
-            const invType = p.category?.inventory_type ?? 'piece'
-            const stock = invType === 'slab'
-              ? p.stock_sqft
-              : invType === 'mixed'
-                ? Math.max(Number(p.stock_count), Number(p.stock_sqft))
-                : p.stock_count
-            const outOfStock = stock <= 0
-            const stockLabel = invType === 'slab'
-              ? `${formatNumber(p.stock_count)} slabs / ${formatNumber(p.stock_sqft)} Sq.Ft`
-              : invType === 'box'
-                ? `${formatNumber(p.stock_count)} boxes / ${formatNumber(p.stock_sqft)} Sq.Ft`
-                : invType === 'mixed'
-                  ? `${formatNumber(p.stock_count)} pcs / ${formatNumber(p.stock_sqft)} Sq.Ft`
-                  : `${formatNumber(p.stock_count)} pcs`
+          <button
+            onClick={() => setCategoryFilter('all')}
+            style={{
+              padding: '6px 14px',
+              borderRadius: 999,
+              border: `1px solid ${categoryFilter === 'all' ? 'var(--primary-600)' : 'var(--border)'}`,
+              background: categoryFilter === 'all' ? 'var(--primary-600)' : '#fff',
+              color: categoryFilter === 'all' ? '#fff' : 'var(--n-700)',
+              fontSize: 12,
+              fontWeight: 600,
+              whiteSpace: 'nowrap',
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+          >
+            All · {products.length}
+          </button>
+          {categories.map((c) => {
+            const active = categoryFilter === c.id
             return (
               <button
-                key={p.id}
-                className="card"
+                key={c.id}
+                onClick={() => setCategoryFilter(c.id)}
                 style={{
-                  padding: 14,
-                  textAlign: 'left',
-                  cursor: outOfStock ? 'not-allowed' : 'pointer',
-                  opacity: outOfStock ? 0.55 : 1,
-                  border: '1px solid var(--border)',
-                  borderRadius: 12,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 10,
-                  minHeight: 120,
+                  padding: '6px 14px',
+                  borderRadius: 999,
+                  border: `1px solid ${active ? 'var(--primary-600)' : 'var(--border)'}`,
+                  background: active ? 'var(--primary-600)' : '#fff',
+                  color: active ? '#fff' : 'var(--n-700)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
                 }}
-                onClick={() => !outOfStock && addToCart(p)}
-                disabled={outOfStock}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
-                  <div className="font-semibold text-sm" style={{ lineHeight: 1.35 }}>{p.name}</div>
-                  <span
-                    className={`badge ${outOfStock ? 'badge-danger' : 'badge-success'}`}
-                    style={{ flexShrink: 0, fontSize: 10, padding: '2px 8px' }}
-                  >
-                    {outOfStock ? 'Out' : 'In'}
-                  </span>
-                </div>
-
-                <div className="text-muted text-sm" style={{ marginTop: -4 }}>{p.category?.name}</div>
-
-                <div
-                  style={{
-                    marginTop: 'auto',
-                    paddingTop: 8,
-                    borderTop: '1px dashed var(--border)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-end',
-                    gap: 8,
-                  }}
-                >
-                  <div>
-                    <div className="text-sm text-muted" style={{ fontSize: 11, lineHeight: 1.2 }}>Selling price</div>
-                    <span className="font-bold" style={{ color: 'var(--primary-600)', fontSize: 16 }}>
-                      {formatCurrency(p.retail_price)}
-                    </span>
-                  </div>
-                  <div style={{ textAlign: 'right', maxWidth: 110 }}>
-                    <div className="text-sm text-muted" style={{ fontSize: 11, lineHeight: 1.2 }}>
-                      {outOfStock ? 'Stock status' : 'Available'}
-                    </div>
-                    <span className="text-sm" style={{ fontWeight: 600, fontSize: 12 }}>
-                      {outOfStock ? 'Out of stock' : stockLabel}
-                    </span>
-                  </div>
-                </div>
+                {c.name} · {c.count}
               </button>
             )
           })}
         </div>
-      </div>
 
-      {/* ───────────── Cart panel ───────────── */}
-      <div
+        {/* Products grid (scrollable) */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            paddingRight: 4,
+            paddingBottom: 8,
+          }}
+        >
+          {visibleProducts.length === 0 ? (
+            <div style={{ padding: 60, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, color: 'var(--n-400)' }}>
+              <PackageSearch size={44} style={{ opacity: 0.5 }} />
+              <p style={{ fontWeight: 600, margin: 0 }}>No products found</p>
+              <p className="text-sm" style={{ margin: 0 }}>
+                {search ? 'Try a different search term' : 'No products in this category yet'}
+              </p>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))',
+                gap: 10,
+              }}
+            >
+              {visibleProducts.map((p) => {
+                const invType = p.category?.inventory_type ?? 'piece'
+                const stock = invType === 'slab'
+                  ? p.stock_sqft
+                  : invType === 'mixed'
+                    ? Math.max(Number(p.stock_count), Number(p.stock_sqft))
+                    : p.stock_count
+                const outOfStock = stock <= 0
+                const stockLabel = invType === 'slab'
+                  ? `${formatNumber(p.stock_count)} slabs · ${formatNumber(p.stock_sqft)} sqft`
+                  : invType === 'box'
+                    ? `${formatNumber(p.stock_count)} boxes · ${formatNumber(p.stock_sqft)} sqft`
+                    : invType === 'mixed'
+                      ? `${formatNumber(p.stock_count)} pcs · ${formatNumber(p.stock_sqft)} sqft`
+                      : `${formatNumber(p.stock_count)} pcs`
+                return (
+                  <button
+                    key={p.id}
+                    className="card"
+                    style={{
+                      padding: 12,
+                      textAlign: 'left',
+                      cursor: outOfStock ? 'not-allowed' : 'pointer',
+                      opacity: outOfStock ? 0.55 : 1,
+                      border: '1px solid var(--border)',
+                      borderRadius: 12,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 8,
+                      minHeight: 132,
+                      transition: 'all 0.15s',
+                      background: '#fff',
+                    }}
+                    onClick={() => !outOfStock && addToCart(p)}
+                    disabled={outOfStock}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
+                      <span
+                        className="badge"
+                        style={{
+                          fontSize: 10,
+                          padding: '2px 7px',
+                          background: 'var(--n-100)',
+                          color: 'var(--n-600)',
+                          maxWidth: 110,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {p.category?.name ?? 'Uncategorized'}
+                      </span>
+                      <span
+                        className={`badge ${outOfStock ? 'badge-danger' : 'badge-success'}`}
+                        style={{ fontSize: 9, padding: '2px 7px', flexShrink: 0 }}
+                      >
+                        {outOfStock ? 'Out' : 'In'}
+                      </span>
+                    </div>
+
+                    <div
+                      className="font-semibold"
+                      style={{
+                        fontSize: 13,
+                        lineHeight: 1.3,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        minHeight: 34,
+                      }}
+                    >
+                      {p.name}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 'auto',
+                        paddingTop: 8,
+                        borderTop: '1px dashed var(--border)',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-end',
+                        gap: 6,
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: 10, color: 'var(--n-500)', lineHeight: 1.1 }}>Price</div>
+                        <div className="font-bold" style={{ color: 'var(--primary-600)', fontSize: 15, lineHeight: 1.2 }}>
+                          {formatCurrency(p.retail_price)}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right', maxWidth: 120 }}>
+                        <div style={{ fontSize: 10, color: 'var(--n-500)', lineHeight: 1.1 }}>
+                          {outOfStock ? 'Stock' : 'Available'}
+                        </div>
+                        <div style={{ fontSize: 11, fontWeight: 600, lineHeight: 1.2 }}>
+                          {outOfStock ? 'Out of stock' : stockLabel}
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ═════════════ RIGHT: CART PANEL ═════════════ */}
+      <aside
         className="card"
         style={{
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          position: 'sticky',
-          top: 16,
-          maxHeight: 'calc(100vh - 130px)',
+          height: '100%',
           borderRadius: 14,
           boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.04)',
+          background: '#fff',
         }}
       >
+        {/* Cart header */}
         <div
           className="card-header"
           style={{
@@ -455,33 +596,28 @@ export function POS() {
             alignItems: 'center',
             borderBottom: '1px solid var(--border)',
             padding: '14px 16px',
+            flexShrink: 0,
           }}
         >
           <div className="card-title flex items-center gap-2" style={{ fontSize: 15, fontWeight: 700 }}>
             <ShoppingCart size={18} />
             Cart
-            <span
-              className="badge badge-success"
-              style={{ marginLeft: 2, fontSize: 11, padding: '2px 8px' }}
-            >
+            <span className="badge badge-success" style={{ marginLeft: 2, fontSize: 11, padding: '2px 8px' }}>
               {cart.length}
             </span>
           </div>
           {cart.length > 0 && (
-            <button
-              className="btn btn-ghost btn-sm"
-              onClick={() => setCart([])}
-              style={{ fontSize: 12 }}
-            >
+            <button className="btn btn-ghost btn-sm" onClick={() => setCart([])} style={{ fontSize: 12 }}>
               Clear
             </button>
           )}
         </div>
 
-        <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
-          {/* Customer */}
-          <div className="form-group">
-            <label className="form-label" style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.02em' }}>
+        {/* Cart body */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
+          {/* Customer selector */}
+          <div className="form-group" style={{ marginBottom: 14 }}>
+            <label className="form-label" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', color: 'var(--n-500)' }}>
               CUSTOMER
             </label>
             {customer ? (
@@ -496,11 +632,11 @@ export function POS() {
                   border: '1px solid var(--border)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
                   <div
                     style={{
-                      width: 34,
-                      height: 34,
+                      width: 36,
+                      height: 36,
                       borderRadius: '50%',
                       background: 'var(--primary-600)',
                       color: '#fff',
@@ -514,18 +650,16 @@ export function POS() {
                   >
                     {customer.name.charAt(0).toUpperCase()}
                   </div>
-                  <div>
-                    <div className="font-semibold text-sm">{customer.name}</div>
-                    <div className="text-muted text-sm" style={{ fontSize: 12 }}>
-                      {customer.mobile ?? 'No mobile'}
+                  <div style={{ minWidth: 0 }}>
+                    <div className="font-semibold text-sm" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {customer.name}
+                    </div>
+                    <div className="text-muted text-sm" style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Phone size={11} /> {customer.mobile ?? 'No mobile'}
                     </div>
                   </div>
                 </div>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => setCustomer(null)}
-                  style={{ padding: 6 }}
-                >
+                <button className="btn btn-ghost btn-sm" onClick={() => setCustomer(null)} style={{ padding: 6 }} title="Remove customer">
                   <X size={14} />
                 </button>
               </div>
@@ -535,14 +669,14 @@ export function POS() {
                 onClick={() => setShowCustomerModal(true)}
                 style={{ justifyContent: 'center', borderStyle: 'dashed' }}
               >
-                <UserPlus size={14} /> Select Customer
+                <UserPlus size={14} /> Select / Add Customer
               </button>
             )}
           </div>
 
+          {/* Cart items */}
           {cart.length === 0 ? (
             <div
-              className="empty-state"
               style={{
                 padding: 32,
                 display: 'flex',
@@ -557,7 +691,7 @@ export function POS() {
               <p className="text-sm" style={{ margin: 0 }}>Search and click products to add</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-2" style={{ marginTop: 12 }}>
+            <div className="flex flex-col gap-2">
               {cart.map((item, i) => (
                 <div
                   key={i}
@@ -568,23 +702,11 @@ export function POS() {
                     background: 'var(--n-50)',
                   }}
                 >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      gap: 8,
-                      marginBottom: 8,
-                    }}
-                  >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
                     <span className="font-semibold text-sm" style={{ flex: 1, lineHeight: 1.3 }}>
                       {item.description}
                     </span>
-                    <button
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => removeFromCart(i)}
-                      style={{ padding: 4, flexShrink: 0 }}
-                    >
+                    <button className="btn btn-ghost btn-sm" onClick={() => removeFromCart(i)} style={{ padding: 4, flexShrink: 0 }}>
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -636,10 +758,7 @@ export function POS() {
                         <span className="text-sm text-muted" style={{ fontSize: 12 }}>{item.unit}</span>
                       </>
                     )}
-                    <span
-                      className="font-bold text-sm"
-                      style={{ marginLeft: 'auto', color: 'var(--primary-600)', whiteSpace: 'nowrap' }}
-                    >
+                    <span className="font-bold text-sm" style={{ marginLeft: 'auto', color: 'var(--primary-600)', whiteSpace: 'nowrap' }}>
                       {formatCurrency(item.amount)}
                     </span>
                   </div>
@@ -648,14 +767,14 @@ export function POS() {
             </div>
           )}
 
-          {/* Charges */}
+          {/* Charges & notes */}
           {cart.length > 0 && (
             <>
               <h4
                 style={{
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: 700,
-                  letterSpacing: '0.04em',
+                  letterSpacing: '0.06em',
                   color: 'var(--n-500)',
                   margin: '20px 0 8px',
                   textTransform: 'uppercase',
@@ -672,7 +791,7 @@ export function POS() {
                 <input className="form-input" placeholder="Discount" type="number" value={charges.discount} onChange={(e) => setCharges({ ...charges, discount: e.target.value })} />
               </div>
 
-              <div className="form-group" style={{ marginTop: 16 }}>
+              <div className="form-group" style={{ marginTop: 14 }}>
                 <label className="form-label" style={{ fontSize: 12, fontWeight: 600 }}>Salesperson</label>
                 <input className="form-input" value={salesperson} onChange={(e) => setSalesperson(e.target.value)} />
               </div>
@@ -691,6 +810,7 @@ export function POS() {
               borderTop: '1px solid var(--border)',
               padding: 16,
               background: 'var(--n-50)',
+              flexShrink: 0,
             }}
           >
             <div style={{ fontSize: 13, marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
@@ -800,110 +920,207 @@ export function POS() {
             </button>
           </div>
         )}
-      </div>
+      </aside>
 
-      {/* Customer modal */}
+      {/* ═════════════ CUSTOMER MODAL ═════════════ */}
       {showCustomerModal && (
         <Modal
           open
-          onClose={() => setShowCustomerModal(false)}
+          onClose={() => { setShowCustomerModal(false); setShowNewCustomerForm(false) }}
           title="Select Customer"
           size="md"
           footer={
-            <>
-              <button className="btn btn-secondary" onClick={() => setShowCustomerModal(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleCreateCustomer} disabled={!newCustomer.name}>
-                <Plus size={14} /> Create New
-              </button>
-            </>
+            showNewCustomerForm ? (
+              <>
+                <button className="btn btn-secondary" onClick={() => setShowNewCustomerForm(false)}>Back</button>
+                <button className="btn btn-primary" onClick={handleCreateCustomer} disabled={!newCustomer.name}>
+                  <Check size={14} /> Save Customer
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="btn btn-secondary" onClick={() => { setShowCustomerModal(false); setShowNewCustomerForm(false) }}>
+                  Cancel
+                </button>
+                <button className="btn btn-primary" onClick={() => setShowNewCustomerForm(true)}>
+                  <Plus size={14} /> New Customer
+                </button>
+              </>
+            )
           }
         >
-          <div className="search-input mb-4" style={{ width: '100%' }}>
-            <Search />
-            <input
-              className="form-input"
-              style={{ width: '100%' }}
-              placeholder="Search customer by name or mobile..."
-              value={customerSearch}
-              onChange={(e) => setCustomerSearch(e.target.value)}
-            />
-          </div>
+          {showNewCustomerForm ? (
+            <>
+              <h4
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                  color: 'var(--n-500)',
+                  textTransform: 'uppercase',
+                  marginBottom: 12,
+                }}
+              >
+                New Customer Details
+              </h4>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Name <span className="req">*</span></label>
+                  <input className="form-input" autoFocus value={newCustomer.name} onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Mobile</label>
+                  <input className="form-input" value={newCustomer.mobile} onChange={(e) => setNewCustomer({ ...newCustomer, mobile: e.target.value })} />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Address</label>
+                <input className="form-input" value={newCustomer.address} onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Customer Type</label>
+                <select className="form-select" value={newCustomer.customer_type} onChange={(e) => setNewCustomer({ ...newCustomer, customer_type: e.target.value })}>
+                  <option value="retail">Retail Customer</option>
+                  <option value="contractor">Contractor</option>
+                  <option value="builder">Builder</option>
+                  <option value="interior_designer">Interior Designer</option>
+                  <option value="dealer">Dealer</option>
+                  <option value="wholesale">Wholesale Customer</option>
+                </select>
+              </div>
+            </>
+          ) : (
+            <>
+              <div
+                className="search-input mb-3"
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8 }}
+              >
+                <Search size={16} style={{ opacity: 0.6 }} />
+                <input
+                  className="form-input"
+                  style={{ width: '100%', border: 'none', background: 'transparent', outline: 'none' }}
+                  placeholder="Search customer by name or mobile..."
+                  value={customerSearch}
+                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  autoFocus
+                />
+                {customerSearch && (
+                  <button className="btn btn-ghost btn-sm" onClick={() => setCustomerSearch('')} style={{ padding: 4 }}>
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
 
-          <div className="flex flex-col gap-2 mb-4" style={{ maxHeight: 220, overflow: 'auto' }}>
-            {filteredCustomers.map((c) => (
+              {/* Walk-in option */}
               <button
-                key={c.id}
-                className="btn btn-secondary w-full"
-                style={{ justifyContent: 'flex-start', padding: '10px 12px', borderRadius: 10 }}
-                onClick={() => { setCustomer(c); setShowCustomerModal(false) }}
+                onClick={() => { setCustomer(null); setShowCustomerModal(false) }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '10px 12px',
+                  marginBottom: 8,
+                  borderRadius: 10,
+                  border: '1px dashed var(--border)',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}
               >
                 <div
                   style={{
-                    width: 32,
-                    height: 32,
+                    width: 34,
+                    height: 34,
                     borderRadius: '50%',
-                    background: 'var(--primary-600)',
-                    color: '#fff',
+                    background: 'var(--n-100)',
+                    color: 'var(--n-500)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontWeight: 700,
-                    fontSize: 13,
-                    marginRight: 10,
                     flexShrink: 0,
                   }}
                 >
-                  {c.name.charAt(0).toUpperCase()}
+                  <UserRound size={16} />
                 </div>
-                <div className="text-left">
-                  <div className="font-semibold text-sm">{c.name}</div>
-                  <div className="text-muted text-sm">{c.mobile ?? 'No mobile'}</div>
+                <div>
+                  <div className="font-semibold text-sm">Walk-in Customer</div>
+                  <div className="text-muted text-sm" style={{ fontSize: 12 }}>Continue without saving customer</div>
                 </div>
               </button>
-            ))}
-          </div>
 
-          <h4
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              letterSpacing: '0.04em',
-              color: 'var(--n-500)',
-              textTransform: 'uppercase',
-              marginBottom: 10,
-            }}
-          >
-            New Customer
-          </h4>
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Name <span className="req">*</span></label>
-              <input className="form-input" value={newCustomer.name} onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Mobile</label>
-              <input className="form-input" value={newCustomer.mobile} onChange={(e) => setNewCustomer({ ...newCustomer, mobile: e.target.value })} />
-            </div>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Address</label>
-            <input className="form-input" value={newCustomer.address} onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Customer Type</label>
-            <select className="form-select" value={newCustomer.customer_type} onChange={(e) => setNewCustomer({ ...newCustomer, customer_type: e.target.value })}>
-              <option value="retail">Retail Customer</option>
-              <option value="contractor">Contractor</option>
-              <option value="builder">Builder</option>
-              <option value="interior_designer">Interior Designer</option>
-              <option value="dealer">Dealer</option>
-              <option value="wholesale">Wholesale Customer</option>
-            </select>
-          </div>
+              <div className="flex flex-col gap-2" style={{ maxHeight: 300, overflow: 'auto' }}>
+                {filteredCustomers.length === 0 ? (
+                  <div style={{ padding: 24, textAlign: 'center', color: 'var(--n-400)' }}>
+                    <User size={28} style={{ opacity: 0.5, marginBottom: 6 }} />
+                    <div className="text-sm">No customers found</div>
+                  </div>
+                ) : (
+                  filteredCustomers.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => { setCustomer(c); setShowCustomerModal(false) }}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        border: '1px solid var(--border)',
+                        background: '#fff',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: '50%',
+                          background: 'var(--primary-600)',
+                          color: '#fff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 700,
+                          fontSize: 14,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {c.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="font-semibold text-sm" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {c.name}
+                        </div>
+                        <div className="text-muted text-sm" style={{ fontSize: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <Phone size={11} /> {c.mobile ?? 'No mobile'}
+                          </span>
+                          {c.address && (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>
+                              <MapPin size={11} /> {c.address}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {c.customer_type && (
+                        <span className="badge" style={{ fontSize: 10, padding: '2px 8px', background: 'var(--n-100)', color: 'var(--n-600)', flexShrink: 0 }}>
+                          {c.customer_type}
+                        </span>
+                      )}
+                    </button>
+                  ))
+                )}
+              </div>
+            </>
+          )}
         </Modal>
       )}
 
-      {/* Slab selection modal */}
+      {/* ═════════════ SLAB MODAL ═════════════ */}
       {showSlabModal && (
         <SlabSelectModal
           product={showSlabModal}
