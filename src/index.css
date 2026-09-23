@@ -636,6 +636,59 @@ table.data-table {
   background: var(--bg-card);
 }
 
+/* Row highlight styles */
+.row-highlight-success { background: var(--success-50) !important; }
+.row-highlight-danger { background: var(--error-50) !important; }
+.row-highlight-warning { background: var(--warning-50) !important; }
+.row-highlight-success:hover { background: var(--success-100) !important; }
+.row-highlight-danger:hover { background: var(--error-100) !important; }
+.row-highlight-warning:hover { background: var(--warning-100) !important; }
+
+.theme-dark .row-highlight-success { background: rgba(22,163,74,0.08) !important; }
+.theme-dark .row-highlight-danger { background: rgba(220,38,38,0.08) !important; }
+.theme-dark .row-highlight-warning { background: rgba(217,119,6,0.08) !important; }
+
+/* Dead stock alert banner */
+.dead-stock-banner {
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+  border: 1px solid var(--warning-200, #fed7aa);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  animation: contentEnter 0.32s ease both;
+}
+.dead-stock-banner .ds-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: var(--warning-100);
+  color: var(--warning-700);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.dead-stock-banner .ds-icon svg { width: 22px; height: 22px; }
+.dead-stock-banner .ds-body { flex: 1; min-width: 0; }
+.dead-stock-banner .ds-title {
+  font-size: 14px; font-weight: 700; color: var(--warning-700);
+  margin-bottom: 2px;
+}
+.dead-stock-banner .ds-sub {
+  font-size: 13px; color: var(--warning-600);
+}
+.dead-stock-banner .ds-count {
+  font-size: 28px; font-weight: 800; color: var(--warning-700);
+  font-variant-numeric: tabular-nums;
+}
+.theme-dark .dead-stock-banner {
+  background: linear-gradient(135deg, rgba(180,83,9,0.12), rgba(180,83,9,0.06));
+  border-color: rgba(180,83,9,0.25);
+}
+.theme-dark .dead-stock-banner .ds-title { color: #fbbf24; }
+.theme-dark .dead-stock-banner .ds-sub { color: #f59e0b; }
+.theme-dark .dead-stock-banner .ds-count { color: #fbbf24; }
+
 /* Empty state */
 .empty-state {
   text-align: center;

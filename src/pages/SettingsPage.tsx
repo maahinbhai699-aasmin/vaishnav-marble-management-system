@@ -21,7 +21,7 @@ export function SettingsPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<Record<string, string>>({
     business_name: businessProfile.defaultName,
     address: businessProfile.addresses.join('\n'),
     phone: businessProfile.phone,

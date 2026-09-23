@@ -5,6 +5,7 @@ import { Loading } from '../components/Feedback'
 import {
   TrendingUp, Wallet, Package, Layers, Boxes, AlertTriangle,
   Users, Truck, DollarSign, ShoppingCart, ArrowDownRight, ArrowUpRight, ChevronRight,
+  AlertOctagon,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
@@ -24,6 +25,8 @@ interface DashboardData {
   recentSales: Array<{ id: string; invoice_number: string; customer_name: string; grand_total: number; sale_date: string; payment_status: string }>
   recentPurchases: Array<{ id: string; invoice_number: string; supplier_name: string; total_amount: number; purchase_date: string }>
   categoryStats: Array<{ name: string; inventory_type: string; total_count: number; total_sqft: number; available_count: number; available_sqft: number }>
+  deadStockCount: number
+  deadStockProducts: Array<{ name: string; lastSaleDate: string | null; stockCount: number; stockValue: number }>
 }
 
 export function Dashboard() {
@@ -67,11 +70,48 @@ export function Dashboard() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supplierDue = (suppliers.data ?? []).reduce((s: number, r: any) => s + Number(r.total_due), 0)
 
-    const [recentSales, recentPurchases, categories] = await Promise.all([
+    // Dead stock detection: products with stock that haven't been sold in 1-3+ years
+    const oneYearAgo = new Date(); oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+    const oneYearAgoStr = oneYearAgo.toISOString().split('T')[0]
+
+    const [recentSales, recentPurchases, categories, allSaleItems] = await Promise.all([
       supabase.from('sales').select('id, invoice_number, customer_name, grand_total, sale_date, payment_status').order('created_at', { ascending: false }).limit(5),
       supabase.from('purchases').select('id, invoice_number, total_amount, purchase_date, supplier:suppliers(name)').order('created_at', { ascending: false }).limit(5),
       supabase.from('categories').select('id, name, inventory_type, display_order').order('display_order'),
+      supabase.from('sale_items').select('product_id, sale:sales(sale_date)').order('sale.sale_date', { ascending: false }),
     ])
+
+    // Build map of last sale date per product
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const lastSaleByProduct: Record<string, string> = {}
+    for (const si of (allSaleItems.data ?? []) as any[]) {
+      const pid = si.product_id
+      if (!pid) continue
+      const saleDate = si.sale?.sale_date
+      if (!saleDate) continue
+      if (!lastSaleByProduct[pid] || saleDate > lastSaleByProduct[pid]) {
+        lastSaleByProduct[pid] = saleDate
+      }
+    }
+
+    // Find products with stock that have never been sold or last sold 1+ year ago
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const deadStockProducts: Array<{ name: string; lastSaleDate: string | null; stockCount: number; stockValue: number }> = []
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const p of (products.data ?? []) as any[]) {
+      const invType = p.category?.inventory_type
+      const stock = invType === 'piece' ? Number(p.stock_count) : Number(p.stock_sqft)
+      if (stock <= 0) continue
+      const lastSale = lastSaleByProduct[p.id] ?? null
+      if (lastSale === null || lastSale < oneYearAgoStr) {
+        deadStockProducts.push({
+          name: p.id,
+          lastSaleDate: lastSale,
+          stockCount: stock,
+          stockValue: Number(p.cost_price) * stock,
+        })
+      }
+    }
 
     const categoryStats: Array<{ name: string; inventory_type: string; total_count: number; total_sqft: number; available_count: number; available_sqft: number }> = []
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -110,6 +150,8 @@ export function Dashboard() {
       recentSales: (recentSales.data ?? []).map((r: { id: string; invoice_number: string; customer_name: string; grand_total: number; sale_date: string; payment_status: string }) => ({ id: r.id, invoice_number: r.invoice_number, customer_name: r.customer_name ?? 'Walk-in', grand_total: Number(r.grand_total), sale_date: r.sale_date, payment_status: r.payment_status })),
       recentPurchases: (recentPurchases.data ?? []).map((r: any) => ({ id: r.id, invoice_number: r.invoice_number, supplier_name: r.supplier?.name ?? '-', total_amount: Number(r.total_amount), purchase_date: r.purchase_date })),
       categoryStats,
+      deadStockCount: deadStockProducts.length,
+      deadStockProducts,
     })
     setLoading(false)
   }, [])
@@ -662,6 +704,18 @@ export function Dashboard() {
           <div className="db-kpi-foot">At cost price</div>
         </div>
       </div>
+
+      {/* Dead Stock Alert */}
+      {data.deadStockCount > 0 && (
+        <div className="dead-stock-banner" style={{ marginTop: 4, marginBottom: 4 }}>
+          <div className="ds-icon"><AlertOctagon /></div>
+          <div className="ds-body">
+            <div className="ds-title">Dead Stock Alert</div>
+            <div className="ds-sub">{data.deadStockCount} product{data.deadStockCount > 1 ? 's have' : ' has'} been in stock for 1+ year without any sales. Consider discounting or clearing them.</div>
+          </div>
+          <div className="ds-count">{formatNumber(data.deadStockCount)}</div>
+        </div>
+      )}
 
       {/* Alerts & Dues */}
       <div className="db-section">
