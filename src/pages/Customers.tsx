@@ -6,6 +6,7 @@ import { Loading, EmptyState, ConfirmDialog } from '../components/Feedback'
 import { formatCurrency, formatDate } from '../lib/utils'
 import type { Customer, Payment } from '../lib/types'
 import { Plus, Search, Edit2, Trash2, Users } from 'lucide-react'
+import { Pagination } from '../components/Pagination'
 
 export function Customers() {
   const toast = useToast()
@@ -18,6 +19,8 @@ export function Customers() {
   const [paymentModal, setPaymentModal] = useState<Customer | null>(null)
   const [detailCustomer, setDetailCustomer] = useState<Customer | null>(null)
   const [payments, setPayments] = useState<Payment[]>([])
+  const [page, setPage] = useState(1)
+  const pageSize = 12
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -33,6 +36,13 @@ export function Customers() {
     const q = search.toLowerCase()
     return customers.filter((c) => c.name.toLowerCase().includes(q) || (c.mobile ?? '').includes(q))
   }, [customers, search])
+
+  const visibleCustomers = useMemo(() => {
+    const start = (page - 1) * pageSize
+    return filtered.slice(start, start + pageSize)
+  }, [filtered, page])
+
+  useEffect(() => { setPage(1) }, [search])
 
   const handleSave = async (data: Partial<Customer>) => {
     if (editing) {
@@ -88,13 +98,43 @@ export function Customers() {
   if (loading) return <Loading label="Loading customers..." />
 
   return (
-    <div>
+    <div className="cust-root" style={{ display: 'grid', gap: 16 }}>
+      <style>{`
+        .cust-root .page-header {
+          padding: 18px 20px;
+          background: linear-gradient(135deg, rgba(244,114,182,0.08), rgba(251,146,60,0.08));
+          border: 1px solid rgba(251,146,60,0.12);
+          border-radius: 16px;
+        }
+        .cust-root .stat-card {
+          background: linear-gradient(135deg, #ffffff, #fff7ed);
+          border-color: rgba(251,146,60,0.12);
+        }
+      `}</style>
       <div className="page-header">
         <div>
           <h2>Customers</h2>
           <div className="page-sub">Manage customer accounts and dues</div>
         </div>
         <button className="btn btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}><Plus size={16} /> Add Customer</button>
+      </div>
+
+      <div className="stat-grid mb-4">
+        <div className="stat-card">
+          <div className="stat-icon primary"><Users /></div>
+          <div className="stat-label">Total Customers</div>
+          <div className="stat-value">{customers.length}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon success"><Users /></div>
+          <div className="stat-label">Collected</div>
+          <div className="stat-value">{formatCurrency(customers.reduce((s, c) => s + Number(c.total_paid || 0), 0))}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon error"><Users /></div>
+          <div className="stat-label">Outstanding</div>
+          <div className="stat-value">{formatCurrency(customers.reduce((s, c) => s + Number(c.total_due || 0), 0))}</div>
+        </div>
       </div>
 
       <div className="filters-bar">
@@ -115,7 +155,7 @@ export function Customers() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((c) => (
+              {visibleCustomers.map((c) => (
                 <tr key={c.id}>
                   <td className="font-semibold">{c.name}</td>
                   <td>{c.mobile ?? '-'}</td>
@@ -136,6 +176,7 @@ export function Customers() {
               ))}
             </tbody>
           </table>
+          <Pagination page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} />
         </div>
       )}
 

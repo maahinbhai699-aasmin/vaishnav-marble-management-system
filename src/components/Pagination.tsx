@@ -17,3 +17,52 @@ export function Pagination({ page, pageSize, total, onPageChange }: { page: numb
     </div>
   )
 }
+
+// Global enhancement for shared list pagination styling
+const paginationStyles = `
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    background: linear-gradient(135deg, rgba(255,255,255,0.96), rgba(248,250,252,0.96));
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+  }
+  .pagination-summary, .pagination-page {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .pagination .btn {
+    border-radius: 10px;
+    min-height: 34px;
+    padding: 6px 10px;
+    background: white;
+    border: 1px solid var(--border);
+    color: var(--text-heading);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  }
+  .pagination .btn:hover:not(:disabled) {
+    background: var(--primary-50);
+    border-color: var(--primary-200);
+    color: var(--primary-700);
+  }
+`
+
+if (typeof document !== 'undefined') {
+  const existing = document.getElementById('copilot-pagination-style')
+  if (!existing) {
+    const style = document.createElement('style')
+    style.id = 'copilot-pagination-style'
+    style.textContent = paginationStyles
+    document.head.appendChild(style)
+  }
+}

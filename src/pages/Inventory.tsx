@@ -6,6 +6,7 @@ import { Loading, EmptyState } from '../components/Feedback'
 import { formatCurrency, formatNumber, stockStatus, stockStatusLabel, stockStatusColor } from '../lib/utils'
 import type { Product, Category, Location } from '../lib/types'
 import { Search, Warehouse, AlertTriangle, Package, Boxes, Layers } from 'lucide-react'
+import { Pagination } from '../components/Pagination'
 
 interface DamageEntry {
   product_id: string
@@ -25,6 +26,8 @@ export function Inventory() {
   const [categoryFilter, setCategoryFilter] = useState('')
   const [stockFilter, setStockFilter] = useState('')
   const [damageModal, setDamageModal] = useState<Product | null>(null)
+  const [page, setPage] = useState(1)
+  const pageSize = 12
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -50,6 +53,13 @@ export function Inventory() {
       return matchSearch && matchCat && matchStock
     })
   }, [products, search, categoryFilter, stockFilter])
+
+  const paginatedProducts = useMemo(() => {
+    const start = (page - 1) * pageSize
+    return filtered.slice(start, start + pageSize)
+  }, [filtered, page])
+
+  useEffect(() => { setPage(1) }, [search, categoryFilter, stockFilter])
 
   const stats = useMemo(() => {
     let totalValue = 0
@@ -112,7 +122,25 @@ export function Inventory() {
   if (loading) return <Loading label="Loading inventory..." />
 
   return (
-    <div>
+    <div className="inv-root" style={{ display: 'grid', gap: 16 }}>
+      <style>{`
+        .inv-root .page-header {
+          padding: 18px 20px;
+          background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(59,130,246,0.04));
+          border: 1px solid rgba(99,102,241,0.12);
+          border-radius: 16px;
+        }
+        .inv-root .stat-card {
+          background: linear-gradient(135deg, #ffffff, #f8fafc);
+          border-color: rgba(99,102,241,0.12);
+        }
+        .inv-root .filters-bar {
+          background: rgba(248,250,252,0.8);
+          border: 1px solid rgba(148,163,184,0.18);
+          border-radius: 14px;
+          padding: 12px;
+        }
+      `}</style>
       <div className="page-header">
         <div>
           <h2>Inventory</h2>
@@ -185,7 +213,7 @@ export function Inventory() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p) => {
+              {paginatedProducts.map((p) => {
                 const invType = p.category?.inventory_type ?? 'piece'
                 return (
                   <tr key={p.id}>
@@ -206,6 +234,7 @@ export function Inventory() {
               })}
             </tbody>
           </table>
+          <Pagination page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} />
         </div>
       )}
 

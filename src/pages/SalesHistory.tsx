@@ -93,7 +93,19 @@ export function SalesHistory() {
   }
 
   return (
-    <div>
+    <div className="sales-root" style={{ display: 'grid', gap: 16 }}>
+      <style>{`
+        .sales-root .page-header {
+          padding: 18px 20px;
+          background: linear-gradient(135deg, rgba(34,197,94,0.08), rgba(14,165,233,0.05));
+          border: 1px solid rgba(34,197,94,0.12);
+          border-radius: 16px;
+        }
+        .sales-root .stat-card {
+          background: linear-gradient(135deg, #ffffff, #f0fdf4);
+          border-color: rgba(34,197,94,0.12);
+        }
+      `}</style>
       {/* Header */}
       <div className="page-header">
         <div>

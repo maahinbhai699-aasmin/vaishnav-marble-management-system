@@ -44,6 +44,11 @@ export function Products() {
     })
   }, [products, search, categoryFilter, stockFilter])
   const visibleProducts = filtered.slice((page - 1) * pageSize, page * pageSize)
+  const totalCatalogValue = products.reduce((sum, product) => {
+    const unitPrice = Number(product.retail_price) || Number(product.cost_price) || 0
+    const stockUnits = Number(product.stock_count) || 0
+    return sum + (unitPrice * stockUnits)
+  }, 0)
 
   const handleSave = async (formData: Partial<Product>, selectedUnits: string[], openingStock: { count: number; sqft: number; unit: string }) => {
     if (editing) {
@@ -187,7 +192,43 @@ export function Products() {
         .pr-filters .form-input,
         .pr-filters .form-select { height: 40px; }
 
-        /* ─── Table panel ─── */
+        /* ─── Catalog summary ─── */
+        .pr-summary-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+        .pr-summary-card {
+          background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+          border: 1px solid var(--border, #e2e8f0);
+          border-radius: 14px;
+          padding: 14px 16px;
+          box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
+        }
+        .pr-summary-label {
+          display: block;
+          font-size: 11px;
+          letter-spacing: .08em;
+          text-transform: uppercase;
+          color: #64748b;
+          font-weight: 700;
+          margin-bottom: 8px;
+        }
+        .pr-summary-value {
+          font-size: clamp(18px, 2vw, 28px);
+          font-weight: 800;
+          letter-spacing: -.03em;
+          color: var(--n-900, #0f172a);
+          font-variant-numeric: tabular-nums;
+        }
+        .pr-summary-lite {
+          font-size: 12px;
+          color: #64748b;
+          margin-top: 4px;
+        }
+
+        /* ─── Product cards ─── */
         .pr-panel {
           background: #fff;
           border: 1px solid var(--border, #e2e8f0);
@@ -195,66 +236,106 @@ export function Products() {
           overflow: hidden;
           animation: prRise .4s ease .08s both;
         }
-        .pr-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-        .pr-table thead th {
-          text-align: left;
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: .07em;
-          text-transform: uppercase;
-          color: #94a3b8;
-          padding: 12px 16px;
-          background: #f8fafc;
-          border-bottom: 1px solid var(--border, #e2e8f0);
-          white-space: nowrap;
+        .pr-card-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 14px;
+          padding: 16px;
         }
-        .pr-table tbody td {
-          padding: 12px 16px;
-          border-bottom: 1px solid #f1f5f9;
-          color: #0f172a;
-          vertical-align: middle;
-        }
-        .pr-table tbody tr:last-child td { border-bottom: none; }
-        .pr-table tbody tr { transition: background .15s ease; }
-        .pr-table tbody tr:hover { background: #f8fafc; }
-        .pr-cell-right { text-align: right; }
-        .pr-prod-cell {
+        .pr-product-card {
+          background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+          border: 1px solid #e2e8f0;
+          border-radius: 14px;
+          padding: 16px;
           display: flex;
-          align-items: center;
-          gap: 10px;
-          min-width: 0;
+          flex-direction: column;
+          gap: 12px;
+          transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
         }
-        .pr-prod-avatar {
-          width: 34px; height: 34px;
-          border-radius: 9px;
+        .pr-product-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 14px 28px rgba(15, 23, 42, 0.07);
+          border-color: #cbd5e1;
+        }
+        .pr-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 10px;
+        }
+        .pr-card-avatar {
+          width: 42px; height: 42px;
+          border-radius: 12px;
           background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
           color: #4338ca;
           display: flex;
           align-items: center;
           justify-content: center;
           font-weight: 800;
-          font-size: 12px;
+          font-size: 14px;
           flex-shrink: 0;
-          letter-spacing: -.02em;
         }
-        .pr-prod-name {
-          font-weight: 600;
+        .pr-card-meta {
+          flex: 1;
+          min-width: 0;
+        }
+        .pr-card-name {
+          font-size: 15px;
+          font-weight: 700;
           color: #0f172a;
+          line-height: 1.35;
+          margin: 0;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
-        .pr-prod-sku {
+        .pr-card-sku {
           font-size: 11.5px;
-          color: #94a3b8;
-          margin-top: 1px;
+          color: #64748b;
+          margin-top: 2px;
           font-variant-numeric: tabular-nums;
         }
+        .pr-card-body {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+        }
+        .pr-stat {
+          background: rgba(248, 250, 252, 0.8);
+          border: 1px solid #e2e8f0;
+          border-radius: 10px;
+          padding: 8px 10px;
+        }
+        .pr-stat-label {
+          display: block;
+          font-size: 10px;
+          text-transform: uppercase;
+          letter-spacing: .06em;
+          color: #64748b;
+          font-weight: 700;
+        }
+        .pr-stat-value {
+          display: block;
+          margin-top: 4px;
+          font-size: 13px;
+          font-weight: 700;
+          color: #0f172a;
+          font-variant-numeric: tabular-nums;
+        }
+        .pr-card-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          padding-top: 4px;
+          border-top: 1px solid #f1f5f9;
+        }
+        .pr-price { font-weight: 800; font-variant-numeric: tabular-nums; color: #0f172a; }
         .pr-mono {
           font-variant-numeric: tabular-nums;
           font-weight: 600;
+          color: #0f172a;
         }
-        .pr-price { font-weight: 700; font-variant-numeric: tabular-nums; }
         .pr-actions {
           display: flex;
           gap: 4px;
@@ -524,49 +605,73 @@ export function Products() {
         </div>
       ) : (
         <div className="pr-panel">
-          <table className="pr-table">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Category</th>
-                <th>Subcategory</th>
-                <th className="pr-cell-right">Retail Price</th>
-                <th className="pr-cell-right">Stock</th>
-                <th>Status</th>
-                <th style={{ width: 80 }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleProducts.map((p) => {
-                const invType = p.category?.inventory_type ?? 'piece'
-                const stockDisplay = invType === 'slab' ? `${formatNumber(p.stock_count)} slabs / ${formatNumber(p.stock_sqft)} Sq.Ft` : invType === 'box' ? `${formatNumber(p.stock_count)} boxes` : `${formatNumber(p.stock_count)} pcs`
-                return (
-                  <tr key={p.id}>
-                    <td>
-                      <div className="pr-prod-cell">
-                        <div className="pr-prod-avatar">{p.name.charAt(0).toUpperCase()}</div>
-                        <div style={{ minWidth: 0 }}>
-                          <div className="pr-prod-name">{p.name}</div>
-                          <div className="pr-prod-sku">{p.sku ?? '—'}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>{p.category?.name ?? '-'}</td>
-                    <td>{p.subcategory?.name ?? '-'}</td>
-                    <td className="pr-cell-right"><span className="pr-price">{formatCurrency(p.retail_price)}</span></td>
-                    <td className="pr-cell-right"><span className="pr-mono">{stockDisplay}</span></td>
-                    <td><span className={`pr-badge ${stockStatusColor(stockStatus(p))}`}>{stockStatusLabel(stockStatus(p))}</span></td>
-                    <td>
-                      <div className="pr-actions">
-                        <button className="pr-act-btn" onClick={() => { setEditing(p); setModalOpen(true) }} title="Edit"><Edit2 size={14} /></button>
-                        <button className="pr-act-btn danger" onClick={() => setDeleteId(p.id)} title="Delete"><Trash2 size={14} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+          <div className="pr-summary-grid">
+            <div className="pr-summary-card">
+              <span className="pr-summary-label">Total Products</span>
+              <div className="pr-summary-value">{formatNumber(filtered.length)}</div>
+              <div className="pr-summary-lite">Catalog entries</div>
+            </div>
+            <div className="pr-summary-card">
+              <span className="pr-summary-label">Stock Value</span>
+              <div className="pr-summary-value">{formatCurrency(totalCatalogValue)}</div>
+              <div className="pr-summary-lite">Based on retail price</div>
+            </div>
+            <div className="pr-summary-card">
+              <span className="pr-summary-label">Visible</span>
+              <div className="pr-summary-value">{formatNumber(visibleProducts.length)}</div>
+              <div className="pr-summary-lite">Products on page</div>
+            </div>
+          </div>
+
+          <div className="pr-card-grid">
+            {visibleProducts.map((p) => {
+              const invType = p.category?.inventory_type ?? 'piece'
+              const stockDisplay = invType === 'slab'
+                ? `${formatNumber(p.stock_count)} slabs / ${formatNumber(p.stock_sqft)} Sq.Ft`
+                : invType === 'box'
+                  ? `${formatNumber(p.stock_count)} boxes`
+                  : `${formatNumber(p.stock_count)} pcs`
+
+              return (
+                <div key={p.id} className="pr-product-card">
+                  <div className="pr-card-header">
+                    <div className="pr-card-avatar">{p.name.charAt(0).toUpperCase()}</div>
+                    <div className="pr-card-meta">
+                      <h3 className="pr-card-name">{p.name}</h3>
+                      <div className="pr-card-sku">{p.sku ?? 'No SKU'}</div>
+                    </div>
+                  </div>
+
+                  <div className="pr-card-body">
+                    <div className="pr-stat">
+                      <span className="pr-stat-label">Category</span>
+                      <span className="pr-stat-value">{p.category?.name ?? '-'}</span>
+                    </div>
+                    <div className="pr-stat">
+                      <span className="pr-stat-label">Status</span>
+                      <span className="pr-stat-value"><span className={`pr-badge ${stockStatusColor(stockStatus(p))}`}>{stockStatusLabel(stockStatus(p))}</span></span>
+                    </div>
+                    <div className="pr-stat">
+                      <span className="pr-stat-label">Stock</span>
+                      <span className="pr-stat-value">{stockDisplay}</span>
+                    </div>
+                    <div className="pr-stat">
+                      <span className="pr-stat-label">Price</span>
+                      <span className="pr-stat-value">{formatCurrency(p.retail_price)}</span>
+                    </div>
+                  </div>
+
+                  <div className="pr-card-footer">
+                    <div className="pr-price">{formatCurrency(p.retail_price)}</div>
+                    <div className="pr-actions">
+                      <button className="pr-act-btn" onClick={() => { setEditing(p); setModalOpen(true) }} title="Edit"><Edit2 size={14} /></button>
+                      <button className="pr-act-btn danger" onClick={() => setDeleteId(p.id)} title="Delete"><Trash2 size={14} /></button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
           <Pagination page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} />
         </div>
       )}

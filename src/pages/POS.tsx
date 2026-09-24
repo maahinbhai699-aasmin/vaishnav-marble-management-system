@@ -312,6 +312,7 @@ export function POS() {
 
   return (
     <div
+      className="pos-shell"
       style={{
         display: 'grid',
         gridTemplateColumns: 'minmax(0, 1fr) 440px',
@@ -321,6 +322,24 @@ export function POS() {
         minHeight: 620,
       }}
     >
+      <style>{`
+        .pos-shell .card, .pos-shell [class*="badge"], .pos-shell .btn-secondary, .pos-shell .btn-ghost {
+          transition: all 0.15s ease;
+        }
+        .pos-shell .card {
+          background: linear-gradient(180deg, #ffffff 0%, #fffaf4 100%);
+          border-color: rgba(249,115,22,0.12);
+        }
+        .pos-shell .badge-success {
+          background: rgba(34,197,94,0.12);
+          color: #15803d;
+        }
+        .pos-shell .btn-secondary {
+          background: linear-gradient(135deg, #fff7ed, #ffffff);
+          border-color: rgba(251,146,60,0.2);
+          color: #9a4d00;
+        }
+      `}</style>
       {/* ═════════════ LEFT: PRODUCT SELECTION ═════════════ */}
       <section
         style={{

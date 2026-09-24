@@ -165,7 +165,19 @@ export function Reports() {
   }
 
   return (
-    <div>
+    <div className="reports-root" style={{ display: 'grid', gap: 16 }}>
+      <style>{`
+        .reports-root .page-header {
+          padding: 18px 20px;
+          background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(168,85,247,0.05));
+          border: 1px solid rgba(59,130,246,0.12);
+          border-radius: 16px;
+        }
+        .reports-root .stat-card {
+          background: linear-gradient(135deg, #ffffff, #eef6ff);
+          border-color: rgba(59,130,246,0.12);
+        }
+      `}</style>
       <div className="page-header">
         <div>
           <h2>Reports</h2>

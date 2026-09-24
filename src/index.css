@@ -374,6 +374,30 @@ a:hover { text-decoration: underline; }
   font-weight: 900;
 }
 
+.marquee-cyan { color: #67e8f9 !important; }
+.marquee-emerald { color: #6ee7b7 !important; }
+.marquee-blue { color: #93c5fd !important; }
+.marquee-violet { color: #c4b5fd !important; }
+.marquee-yellow { color: #fcd34d !important; }
+.marquee-pink { color: #f9a8d4 !important; }
+.marquee-orange { color: #fdba74 !important; }
+.marquee-green { color: #86efac !important; }
+.marquee-sky { color: #7dd3fc !important; }
+.marquee-purple { color: #d8b4fe !important; }
+.marquee-lime { color: #bef264 !important; }
+.marquee-teal { color: #5eead4 !important; }
+.marquee-rose { color: #fda4af !important; }
+.marquee-amber { color: #fbbf24 !important; }
+.marquee-red { color: #fca5a5 !important; }
+.marquee-indigo { color: #a5b4fc !important; }
+.marquee-fuchsia { color: #f0abfc !important; }
+.marquee-coral { color: #ff9c8b !important; }
+.marquee-peach { color: #fbbf9e !important; }
+.marquee-sgreen { color: #4ade80 !important; font-weight: 800; }
+.marquee-gold { color: #f5d26a !important; font-weight: 800; }
+.marquee-white { color: #ffffff !important; font-weight: 700; }
+.marquee-muted { color: rgba(255,255,255,0.65) !important; }
+
 .marquee-separator {
   color: rgba(255,255,255,0.35) !important;
 }
