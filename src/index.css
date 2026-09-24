@@ -294,11 +294,114 @@ a:hover { text-decoration: underline; }
   box-shadow: 0 2px 12px rgba(8, 11, 18, 0.06);
 }
 
+.topbar-brand-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.topbar-brand-logo {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(255, 157, 23, 0.18);
+}
+
 .topbar h1 {
   font-size: 18px;
+  color: #ff9d17;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+  white-space: nowrap;
 }
 
 .topbar .spacer { flex: 1; }
+
+.live-marquee-wrap {
+  position: sticky;
+  top: 60px;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background: #020609;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,0.04);
+}
+
+.live-marquee-inner {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: linear-gradient(180deg, #050b10 0%, #070d13 100%);
+  min-height: 36px;
+}
+
+.live-marquee-track {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  white-space: nowrap;
+  min-width: max-content;
+  padding: 0 12px;
+  height: 36px;
+  animation: marqueeScroll 45s linear infinite;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.live-marquee-track-clone {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: max-content;
+  animation-delay: 0s;
+}
+
+.live-marquee-track span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255,255,255,0.9);
+}
+
+.marquee-brand {
+  color: #ff9d17 !important;
+  font-weight: 900;
+}
+
+.marquee-separator {
+  color: rgba(255,255,255,0.35) !important;
+}
+
+.live-marquee-date-time {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 14px;
+  height: 36px;
+  background: rgba(255,255,255,0.03);
+  border-left: 1px solid rgba(255,255,255,0.08);
+  color: #f8fafc;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+@keyframes marqueeScroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
 
 .menu-toggle {
   display: none;

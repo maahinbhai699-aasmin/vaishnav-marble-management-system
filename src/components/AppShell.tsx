@@ -48,10 +48,44 @@ const navItems = [
   ]},
 ]
 
+const marqueeItems = [
+  { label: 'VAISHNAVI MARBLE SHOP', className: 'marquee-brand' },
+  { label: 'Tiles', className: 'text-cyan-300' },
+  { label: 'Sanitaryware', className: 'text-emerald-300' },
+  { label: 'Kitchen Sink', className: 'text-blue-300' },
+  { label: 'Bathroom Vanity', className: 'text-purple-300' },
+  { label: 'Parking Tiles', className: 'text-yellow-300' },
+  { label: 'Marble & Granite', className: 'text-pink-300' },
+  { label: 'Kajaria', className: 'text-orange-300' },
+  { label: 'Johnson', className: 'text-green-300' },
+  { label: 'Jaquar', className: 'text-sky-300' },
+  { label: 'Fortiva', className: 'text-violet-300' },
+  { label: 'Somany', className: 'text-emerald-300' },
+  { label: 'Vitero', className: 'text-cyan-300' },
+  { label: 'Sika', className: 'text-pink-300' },
+  { label: 'Hindware', className: 'text-yellow-300' },
+  { label: 'Parryware', className: 'text-rose-300' },
+  { label: 'Varmora', className: 'text-amber-300' },
+  { label: 'ROOF', className: 'text-blue-300' },
+  { label: 'Nitco', className: 'text-lime-300' },
+  { label: 'CERO', className: 'text-purple-300' },
+  { label: 'Lemovia', className: 'text-orange-300' },
+  { label: 'Wonder Ceramic', className: 'text-fuchsia-300' },
+  { label: 'Bajaj Finserv', className: 'marquee-brand' },
+  { label: '0 Down Payment*', className: 'text-green-400 font-bold' },
+  { label: 'Easy EMI Available', className: 'text-amber-300 font-bold' },
+  { label: 'Premium Quality', className: 'text-white' },
+  { label: 'Latest Designs', className: 'text-[#ff9d17]' },
+  { label: 'Trusted Brands', className: 'text-emerald-300' },
+  { label: 'Flexible Payment Options', className: 'text-cyan-300' },
+  { label: '*Subject to eligibility & applicable terms', className: 'text-white/50' },
+]
+
 export function AppShell({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
   const [toasts, setToasts] = useState<Toast[]>([])
+  const [currentDateTime, setCurrentDateTime] = useState(new Date())
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('vaishnav-theme') as 'light' | 'dark') ?? 'light'
   })
@@ -62,11 +96,18 @@ export function AppShell({ children }: { children: ReactNode }) {
     localStorage.setItem('vaishnav-theme', theme)
   }, [theme])
 
+  useEffect(() => {
+    const timer = window.setInterval(() => setCurrentDateTime(new Date()), 1000)
+    return () => window.clearInterval(timer)
+  }, [])
+
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = Date.now() + Math.random()
     setToasts((t) => [...t, { id, message, type }])
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3000)
   }, [])
+
+  const marqueeItemsFull = [...marqueeItems, ...marqueeItems]
 
   return (
     <ToastContext.Provider value={showToast}>
@@ -105,7 +146,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             <button className="menu-toggle" aria-label={sidebarOpen ? 'Close navigation' : 'Open navigation'} onClick={() => setSidebarOpen(!sidebarOpen)}>
               {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
-            <h1>Vaishnav Marble Shop</h1>
+            <div className="topbar-brand-wrap">
+              <img className="topbar-brand-logo" src={businessProfile.logoUrl} alt="Vaishnav Marble logo" />
+              <h1>Vaishnav Marble</h1>
+            </div>
             <div className="spacer" />
             <button className="theme-toggle" aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`} title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`} onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
               {theme === 'light' ? <Moon size={17} /> : <Sun size={17} />}
@@ -114,6 +158,32 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Boxes size={18} style={{ color: 'var(--text-muted)' }} />
             <span className="text-muted text-sm">Inventory & Billing System</span>
           </header>
+
+          <div className="live-marquee-wrap">
+            <div className="live-marquee-inner">
+              <div className="live-marquee-track">
+                {marqueeItemsFull.map((item, index) => (
+                  <span key={`${item.label}-${index}`} className={item.className}>
+                    {item.label}
+                    {index !== marqueeItemsFull.length - 1 && <span className="marquee-separator">•</span>}
+                  </span>
+                ))}
+              </div>
+              <div className="live-marquee-track live-marquee-track-clone" aria-hidden="true">
+                {marqueeItemsFull.map((item, index) => (
+                  <span key={`clone-${item.label}-${index}`} className={item.className}>
+                    {item.label}
+                    {index !== marqueeItemsFull.length - 1 && <span className="marquee-separator">•</span>}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="live-marquee-date-time">
+              <span>📅 {currentDateTime.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+              <span>🕒 {currentDateTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}</span>
+            </div>
+          </div>
+
           <main key={location.pathname} className="page-content">
             {children}
           </main>
