@@ -183,6 +183,10 @@ export function Products() {
           overflow: hidden;
           animation: prRise .4s ease .08s both;
         }
+        .pr-table-scroll {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+        }
         .pr-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
         .pr-table thead th {
           text-align: left;
@@ -205,6 +209,10 @@ export function Products() {
         .pr-table tbody tr:last-child td { border-bottom: none; }
         .pr-table tbody tr { transition: background .15s ease; }
         .pr-table tbody tr:hover { background: #f8fafc; }
+        .pr-table tbody tr.row-low-stock { background: #fffbeb; }
+        .pr-table tbody tr.row-low-stock:hover { background: #fef3c7; }
+        .pr-table tbody tr.row-out-of-stock { background: #fff1f2; }
+        .pr-table tbody tr.row-out-of-stock:hover { background: #ffe4e6; }
         .pr-cell-right { text-align: right; }
         .pr-prod-cell {
           display: flex;
@@ -512,6 +520,7 @@ export function Products() {
         </div>
       ) : (
         <div className="pr-panel">
+          <div className="pr-table-scroll">
           <table className="pr-table">
             <thead>
               <tr>
@@ -528,8 +537,10 @@ export function Products() {
               {visibleProducts.map((p) => {
                 const invType = p.category?.inventory_type ?? 'piece'
                 const stockDisplay = invType === 'slab' ? `${formatNumber(p.stock_count)} slabs / ${formatNumber(p.stock_sqft)} Sq.Ft` : invType === 'box' ? `${formatNumber(p.stock_count)} boxes` : `${formatNumber(p.stock_count)} pcs`
+                const status = stockStatus(p)
+                const rowClass = status === 'out_of_stock' ? 'row-out-of-stock' : status === 'low_stock' ? 'row-low-stock' : ''
                 return (
-                  <tr key={p.id}>
+                  <tr key={p.id} className={rowClass}>
                     <td>
                       <div className="pr-prod-cell">
                         <div className="pr-prod-avatar">{p.name.charAt(0).toUpperCase()}</div>
@@ -555,6 +566,7 @@ export function Products() {
               })}
             </tbody>
           </table>
+          </div>
           <Pagination page={page} pageSize={pageSize} total={filtered.length} onPageChange={setPage} />
         </div>
       )}

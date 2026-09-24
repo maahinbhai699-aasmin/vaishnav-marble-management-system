@@ -303,6 +303,7 @@ export function POS() {
 
   return (
     <div
+      className="pos-layout"
       style={{
         display: 'grid',
         gridTemplateColumns: 'minmax(0, 1fr) 420px',
@@ -311,6 +312,17 @@ export function POS() {
         minHeight: 'calc(100vh - 120px)',
       }}
     >
+      <style>{`
+        @media (max-width: 900px) {
+          .pos-layout {
+            grid-template-columns: 1fr !important;
+          }
+          .pos-layout > .card {
+            position: static !important;
+            max-height: none !important;
+          }
+        }
+      `}</style>
       {/* ───────────── Product selection ───────────── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minWidth: 0 }}>
         <div
