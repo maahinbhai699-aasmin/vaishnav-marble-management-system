@@ -26,7 +26,7 @@ interface DashboardData {
   recentPurchases: Array<{ id: string; invoice_number: string; supplier_name: string; total_amount: number; purchase_date: string }>
   categoryStats: Array<{ name: string; inventory_type: string; total_count: number; total_sqft: number; available_count: number; available_sqft: number }>
   deadStockCount: number
-  deadStockProducts: Array<{ name: string; lastSaleDate: string | null; stockCount: number; stockValue: number }>
+  deadStockProducts: Array<{ name: string; category_name: string | null; lastSaleDate: string | null; stockCount: number; stockValue: number }>
 }
 
 export function Dashboard() {
@@ -41,8 +41,8 @@ export function Dashboard() {
       supabase.from('sales').select('grand_total, paid_amount, sale_date').eq('sale_date', today),
       supabase.from('purchases').select('total_amount, purchase_date').eq('purchase_date', today),
       supabase.from('expenses').select('amount, expense_date').eq('expense_date', today),
-      supabase.from('products').select('id, stock_count, stock_sqft, cost_price, min_stock_level, category:categories(inventory_type)'),
-      supabase.from('slabs').select('total_sqft, remaining_sqft, status'),
+      supabase.from('products').select('id, name, category_id, stock_count, stock_sqft, cost_price, min_stock_level, category:categories(id, name, inventory_type)'),
+      supabase.from('slabs').select('id, category_id, total_sqft, remaining_sqft, status'),
       supabase.from('customers').select('total_due'),
       supabase.from('suppliers').select('total_due'),
       supabase.from('products').select('id').lt('stock_count', 1).or('stock_sqft.lt.1'),
@@ -62,7 +62,6 @@ export function Dashboard() {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const slabData = (slabs.data ?? []) as any[]
-    const availableSlabs = slabData.filter((s) => s.status === 'available')
     const totalSqft = slabData.reduce((s: number, r: any) => s + Number(r.remaining_sqft), 0)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -96,7 +95,7 @@ export function Dashboard() {
 
     // Find products with stock that have never been sold or last sold 1+ year ago
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const deadStockProducts: Array<{ name: string; lastSaleDate: string | null; stockCount: number; stockValue: number }> = []
+    const deadStockProducts: Array<{ name: string; category_name: string | null; lastSaleDate: string | null; stockCount: number; stockValue: number }> = []
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const p of (products.data ?? []) as any[]) {
       const invType = p.category?.inventory_type
@@ -105,7 +104,8 @@ export function Dashboard() {
       const lastSale = lastSaleByProduct[p.id] ?? null
       if (lastSale === null || lastSale < oneYearAgoStr) {
         deadStockProducts.push({
-          name: p.id,
+          name: p.name,
+          category_name: p.category?.name ?? 'Uncategorized',
           lastSaleDate: lastSale,
           stockCount: stock,
           stockValue: Number(p.cost_price) * stock,
@@ -116,22 +116,32 @@ export function Dashboard() {
     const categoryStats: Array<{ name: string; inventory_type: string; total_count: number; total_sqft: number; available_count: number; available_sqft: number }> = []
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const cat of (categories.data ?? []) as any[]) {
-      const activeSlabs = slabData.filter((s: any) => s.status !== 'sold' && s.status !== 'damaged')
-      const total_count = cat.inventory_type === 'slab'
-        ? activeSlabs.length
-        : (products.data ?? []).reduce((s: number, p: any) => s + Number(p.stock_count), 0)
-      const total_sqft = cat.inventory_type === 'slab'
-        ? activeSlabs.reduce((s: number, r: any) => s + Number(r.total_sqft), 0)
-        : cat.inventory_type === 'box' || cat.inventory_type === 'mixed'
-        ? (products.data ?? []).reduce((s: number, p: any) => s + Number(p.stock_sqft), 0)
-        : 0
-      const available_count = cat.inventory_type === 'slab'
-        ? availableSlabs.length
-        : total_count
-      const available_sqft = cat.inventory_type === 'slab'
-        ? activeSlabs.reduce((s: number, r: any) => s + Number(r.remaining_sqft), 0)
-        : cat.inventory_type === 'box' || cat.inventory_type === 'mixed' ? total_sqft : 0
-      categoryStats.push({ name: cat.name, inventory_type: cat.inventory_type, total_count, total_sqft, available_count, available_sqft })
+      const categoryProducts = (products.data ?? []).filter((p: any) => p.category_id === cat.id)
+      const categorySlabs = slabData.filter((s: any) => s.category_id === cat.id && s.status !== 'sold' && s.status !== 'damaged')
+
+      if (cat.inventory_type === 'slab') {
+        const total_count = categorySlabs.length
+        const total_sqft = categorySlabs.reduce((s: number, r: any) => s + Number(r.total_sqft), 0)
+        const available_count = categorySlabs.filter((s: any) => s.status === 'available').length
+        const available_sqft = categorySlabs.reduce((s: number, r: any) => s + Number(r.remaining_sqft), 0)
+
+        categoryStats.push({ name: cat.name, inventory_type: cat.inventory_type, total_count, total_sqft, available_count, available_sqft })
+        continue
+      }
+
+      const total_count = categoryProducts.reduce((s: number, p: any) => s + Number(p.stock_count), 0)
+      const total_sqft = categoryProducts.reduce((s: number, p: any) => s + Number(p.stock_sqft), 0)
+      const available_count = total_count
+      const available_sqft = total_sqft
+
+      categoryStats.push({
+        name: cat.name,
+        inventory_type: cat.inventory_type,
+        total_count,
+        total_sqft,
+        available_count,
+        available_sqft,
+      })
     }
 
     setData({
@@ -373,6 +383,47 @@ export function Dashboard() {
           color: var(--db-text);
           letter-spacing: -0.01em;
           font-variant-numeric: tabular-nums;
+        }
+        .db-deadstock-list {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 10px;
+          padding: 16px 18px 18px;
+        }
+        .db-deadstock-item {
+          border: 1px solid var(--db-border);
+          border-radius: 12px;
+          background: #fbfdff;
+          padding: 12px 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .db-deadstock-name {
+          font-size: 13.5px;
+          font-weight: 700;
+          color: var(--db-text);
+          line-height: 1.3;
+        }
+        .db-deadstock-meta {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 6px;
+          font-size: 11.5px;
+          color: var(--db-muted);
+        }
+        .db-deadstock-pill {
+          display: inline-flex;
+          align-items: center;
+          padding: 3px 7px;
+          border-radius: 999px;
+          background: #f1f5f9;
+          color: var(--db-muted);
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
         }
 
         /* ── Panel (generic card) ── */
@@ -707,14 +758,36 @@ export function Dashboard() {
 
       {/* Dead Stock Alert */}
       {data.deadStockCount > 0 && (
-        <div className="dead-stock-banner" style={{ marginTop: 4, marginBottom: 4 }}>
-          <div className="ds-icon"><AlertOctagon /></div>
-          <div className="ds-body">
-            <div className="ds-title">Dead Stock Alert</div>
-            <div className="ds-sub">{data.deadStockCount} product{data.deadStockCount > 1 ? 's have' : ' has'} been in stock for 1+ year without any sales. Consider discounting or clearing them.</div>
+        <>
+          <div className="dead-stock-banner" style={{ marginTop: 4, marginBottom: 4 }}>
+            <div className="ds-icon"><AlertOctagon /></div>
+            <div className="ds-body">
+              <div className="ds-title">Dead Stock Alert</div>
+              <div className="ds-sub">{data.deadStockCount} product{data.deadStockCount > 1 ? 's have' : ' has'} been in stock for 1+ year without any sales. Consider discounting or clearing them.</div>
+            </div>
+            <div className="ds-count">{formatNumber(data.deadStockCount)}</div>
           </div>
-          <div className="ds-count">{formatNumber(data.deadStockCount)}</div>
-        </div>
+          <div className="db-panel" style={{ marginBottom: 12 }}>
+            <div className="db-panel-head">
+              <div className="db-panel-title">
+                <AlertOctagon size={16} /> Dead Stock by Product & Category
+              </div>
+            </div>
+            <div className="db-deadstock-list">
+              {data.deadStockProducts.map((item) => (
+                <div key={`${item.name}-${item.category_name}`} className="db-deadstock-item">
+                  <div className="db-deadstock-name">{item.name}</div>
+                  <div className="db-deadstock-meta">
+                    <span className="db-deadstock-pill">{item.category_name ?? 'Uncategorized'}</span>
+                    <span>Stock: {formatNumber(item.stockCount)}</span>
+                    <span>•</span>
+                    <span>Last sale: {item.lastSaleDate ? new Date(item.lastSaleDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Never'}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
       )}
 
       {/* Alerts & Dues */}

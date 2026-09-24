@@ -124,6 +124,18 @@ export function Products() {
           flex-wrap: wrap;
           margin-bottom: 20px;
         }
+        @media (max-width: 560px) {
+          .pr-header {
+            align-items: stretch;
+          }
+          .pr-header > div:first-child {
+            flex: 1 1 100%;
+          }
+          .pr-header .btn {
+            width: 100%;
+            justify-content: center;
+          }
+        }
         .pr-header h2 {
           margin: 0;
           font-size: 24px;

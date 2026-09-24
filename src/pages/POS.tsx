@@ -105,16 +105,7 @@ export function POS() {
   }, [charges])
   const discount = Number(charges.discount || 0)
   const afterDiscount = subtotal + totalCharges - discount
-  const gstAmount = useMemo(() => {
-    return cart.reduce((s, item) => {
-      const itemShare = subtotal > 0 ? (item.amount / subtotal) : 0
-      const itemCharges = totalCharges * itemShare
-      const itemDiscount = discount * itemShare
-      const taxable = item.amount + itemCharges - itemDiscount
-      return s + (taxable * Number(item.gst_rate) / 100)
-    }, 0)
-  }, [cart, subtotal, totalCharges, discount])
-  const grandTotal = afterDiscount + gstAmount
+  const grandTotal = afterDiscount
   const paid = Number(paidAmount || 0)
   const due = grandTotal - paid
 
@@ -223,7 +214,7 @@ export function POS() {
         delivery_charge: Number(charges.delivery || 0),
         other_charge: Number(charges.other || 0),
         discount,
-        gst_amount: gstAmount,
+        gst_amount: 0,
         grand_total: grandTotal,
         paid_amount: paid,
         due_amount: due,
@@ -829,13 +820,6 @@ export function POS() {
                 <span style={{ fontWeight: 600, color: 'var(--success-600)' }}>-{formatCurrency(discount)}</span>
               </div>
             )}
-            {gstAmount > 0 && (
-              <div style={{ fontSize: 13, marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
-                <span className="text-muted">GST</span>
-                <span style={{ fontWeight: 600 }}>{formatCurrency(gstAmount)}</span>
-              </div>
-            )}
-
             <div
               style={{
                 display: 'flex',
@@ -1356,7 +1340,6 @@ function InvoiceView({ saleId, onClose }: { saleId: string; onClose: () => void 
           {Number(sale.delivery_charge) > 0 && <div className="total-row"><span>Delivery</span><span>{formatCurrency(sale.delivery_charge)}</span></div>}
           {Number(sale.other_charge) > 0 && <div className="total-row"><span>Other</span><span>{formatCurrency(sale.other_charge)}</span></div>}
           {Number(sale.discount) > 0 && <div className="total-row"><span>Discount</span><span>-{formatCurrency(sale.discount)}</span></div>}
-          {Number(sale.gst_amount) > 0 && <div className="total-row"><span>GST</span><span>{formatCurrency(sale.gst_amount)}</span></div>}
           <div className="total-row grand-total"><span>Grand Total</span><span>{formatCurrency(sale.grand_total)}</span></div>
           <div className="total-row"><span>Paid</span><span>{formatCurrency(sale.paid_amount)}</span></div>
           <div className="total-row" style={{ fontWeight: 600, color: Number(sale.due_amount) > 0 ? '#dc2626' : '#16a34a' }}>
