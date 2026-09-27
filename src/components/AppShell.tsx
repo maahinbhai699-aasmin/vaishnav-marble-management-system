@@ -81,11 +81,28 @@ const marqueeItems = [
   { label: '*Subject to eligibility & applicable terms', className: 'marquee-muted' },
 ]
 
+const marqueeItemsFull = [...marqueeItems, ...marqueeItems]
+
+function LiveDateTime() {
+  const [currentDateTime, setCurrentDateTime] = useState(() => new Date())
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setCurrentDateTime(new Date()), 1000)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  return (
+    <div className="live-marquee-date-time">
+      <span>📅 {currentDateTime.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+      <span>🕒 {currentDateTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}</span>
+    </div>
+  )
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
   const [toasts, setToasts] = useState<Toast[]>([])
-  const [currentDateTime, setCurrentDateTime] = useState(new Date())
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('vaishnav-theme') as 'light' | 'dark') ?? 'light'
   })
@@ -96,18 +113,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     localStorage.setItem('vaishnav-theme', theme)
   }, [theme])
 
-  useEffect(() => {
-    const timer = window.setInterval(() => setCurrentDateTime(new Date()), 1000)
-    return () => window.clearInterval(timer)
-  }, [])
-
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = Date.now() + Math.random()
     setToasts((t) => [...t, { id, message, type }])
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3000)
   }, [])
-
-  const marqueeItemsFull = [...marqueeItems, ...marqueeItems]
 
   return (
     <ToastContext.Provider value={showToast}>
@@ -178,10 +188,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 ))}
               </div>
             </div>
-            <div className="live-marquee-date-time">
-              <span>📅 {currentDateTime.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-              <span>🕒 {currentDateTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}</span>
-            </div>
+            <LiveDateTime />
           </div>
 
           <main key={location.pathname} className="page-content">
