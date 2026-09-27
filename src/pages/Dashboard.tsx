@@ -77,7 +77,7 @@ export function Dashboard() {
       supabase.from('sales').select('id, invoice_number, customer_name, grand_total, sale_date, payment_status').order('created_at', { ascending: false }).limit(5),
       supabase.from('purchases').select('id, invoice_number, total_amount, purchase_date, supplier:suppliers(name)').order('created_at', { ascending: false }).limit(5),
       supabase.from('categories').select('id, name, inventory_type, display_order').order('display_order'),
-      supabase.from('sale_items').select('product_id, sale:sales(sale_date)').order('sale.sale_date', { ascending: false }),
+      supabase.from('sale_items').select('product_id, sale:sales(sale_date)'),
     ])
 
     // Build map of last sale date per product
