@@ -44,6 +44,18 @@ export function Products() {
     })
   }, [products, search, categoryFilter, stockFilter])
   const visibleProducts = filtered.slice((page - 1) * pageSize, page * pageSize)
+
+  const summary = useMemo(() => {
+    const totalValue = products.reduce((s, p) => {
+      const invType = p.category?.inventory_type ?? 'piece'
+      const stock = invType === 'piece' ? Number(p.stock_count) : Number(p.stock_sqft)
+      return s + (Number(p.cost_price) * stock)
+    }, 0)
+    const lowCount = products.filter((p) => stockStatus(p) === 'low_stock').length
+    const outCount = products.filter((p) => stockStatus(p) === 'out_of_stock').length
+    return { totalValue, lowCount, outCount }
+  }, [products])
+
   const handleSave = async (formData: Partial<Product>, selectedUnits: string[], openingStock: { count: number; sqft: number; unit: string }) => {
     if (editing) {
       const { error } = await supabase.from('products').update({
@@ -104,14 +116,37 @@ export function Products() {
   return (
     <div className="pr-root">
       <style>{`
-        .pr-root { animation: prFade .35s ease both; }
+        .pr-root {
+          --pr-card: #ffffff;
+          --pr-border: #e6ebf2;
+          --pr-text: #0f172a;
+          --pr-muted: #64748b;
+          --pr-soft: #94a3b8;
+          animation: prFade .4s ease both;
+        }
         @keyframes prFade {
           from { opacity: 0; transform: translateY(8px); }
           to { opacity: 1; transform: translateY(0); }
         }
         @keyframes prRise {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
+          from { opacity: 0; transform: translateY(14px) scale(.985); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes prRowIn {
+          from { opacity: 0; transform: translateX(-6px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes prShine {
+          0% { transform: translateX(-140%) skewX(-18deg); }
+          100% { transform: translateX(240%) skewX(-18deg); }
+        }
+        @keyframes prFloat {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-3px); }
+        }
+        @keyframes prGlow {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(99,102,241,.42); }
+          50% { box-shadow: 0 0 0 10px rgba(99,102,241,0); }
         }
 
         /* ─── Header ─── */
@@ -121,316 +156,414 @@ export function Products() {
           align-items: flex-end;
           gap: 16px;
           flex-wrap: wrap;
-          margin-bottom: 20px;
+          margin-bottom: 22px;
         }
         @media (max-width: 560px) {
-          .pr-header {
-            align-items: stretch;
-          }
-          .pr-header > div:first-child {
-            flex: 1 1 100%;
-          }
-          .pr-header .btn {
-            width: 100%;
-            justify-content: center;
-          }
+          .pr-header { align-items: stretch; }
+          .pr-header > div:first-child { flex: 1 1 100%; }
+          .pr-header .pr-add-btn { width: 100%; justify-content: center; }
         }
         .pr-header h2 {
           margin: 0;
-          font-size: 24px;
+          font-size: 26px;
           font-weight: 800;
-          letter-spacing: -0.02em;
-          color: var(--n-900, #0f172a);
+          letter-spacing: -0.025em;
+          background: linear-gradient(92deg, #0f172a 0%, #4f46e5 55%, #06b6d4 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
         }
         .pr-header-sub {
-          margin-top: 4px;
+          margin-top: 6px;
           font-size: 13.5px;
-          color: var(--n-500, #64748b);
+          color: var(--pr-muted);
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 10px;
+          flex-wrap: wrap;
         }
         .pr-count-pill {
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          padding: 3px 10px;
+          padding: 4px 11px;
           border-radius: 999px;
-          background: #eef2ff;
+          background: linear-gradient(135deg, #eef2ff, #e0e7ff);
           color: #4338ca;
           font-size: 11.5px;
-          font-weight: 700;
+          font-weight: 800;
           letter-spacing: .02em;
+          box-shadow: 0 6px 14px -8px rgba(79,70,229,.6);
         }
         .pr-count-pill::before {
           content: '';
           width: 6px; height: 6px; border-radius: 50%;
           background: #4f46e5;
+          box-shadow: 0 0 0 3px rgba(79,70,229,.2);
         }
+
+        /* ─── Add Button — black base, gradient on hover ─── */
+        .pr-add-btn {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          gap: 9px;
+          padding: 11px 20px;
+          border-radius: 12px;
+          background: #0f172a;
+          border: 1px solid #0f172a;
+          color: #ffffff;
+          font-size: 13.5px;
+          font-weight: 700;
+          cursor: pointer;
+          overflow: hidden;
+          isolation: isolate;
+          box-shadow: 0 10px 22px -10px rgba(15,23,42,.75);
+          transition: transform .22s cubic-bezier(.22,1,.36,1), box-shadow .22s ease, background .28s ease;
+        }
+        .pr-add-btn::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(115deg, transparent 32%, rgba(255,255,255,.3) 50%, transparent 68%);
+          transform: translateX(-140%);
+          z-index: -1;
+        }
+        .pr-add-btn:hover {
+          background: linear-gradient(115deg, #4f46e5, #06b6d4);
+          border-color: transparent;
+          transform: translateY(-2px);
+          box-shadow: 0 16px 30px -12px rgba(79,70,229,.6);
+        }
+        .pr-add-btn:hover::after { animation: prShine .9s ease; }
+        .pr-add-btn:active { transform: scale(.96); }
 
         /* ─── Filters ─── */
         .pr-filters {
           display: grid;
           grid-template-columns: minmax(220px, 1fr) 200px 180px;
-          gap: 10px;
+          gap: 12px;
           margin-bottom: 16px;
-          padding: 12px;
-          background: #fff;
-          border: 1px solid var(--border, #e2e8f0);
-          border-radius: 14px;
-          animation: prRise .4s ease .04s both;
+          padding: 14px;
+          background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+          border: 1px solid var(--pr-border);
+          border-radius: 16px;
+          box-shadow: 0 10px 30px -20px rgba(15,23,42,.2);
+          animation: prRise .45s cubic-bezier(.22,1,.36,1) .04s both;
         }
         @media (max-width: 780px) {
           .pr-filters { grid-template-columns: 1fr; }
         }
         .pr-filters .form-input,
-        .pr-filters .form-select { height: 40px; }
+        .pr-filters .form-select {
+          height: 42px;
+          border-radius: 10px;
+          transition: border-color .2s ease, box-shadow .2s ease;
+        }
+        .pr-filters .form-input:focus,
+        .pr-filters .form-select:focus {
+          border-color: #a5b4fc;
+          box-shadow: 0 0 0 3px rgba(99,102,241,.14);
+        }
+        .pr-filters .search-input {
+          position: relative;
+        }
 
-        /* ─── Catalog summary ─── */
+        /* ─── Summary cards ─── */
         .pr-summary-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-          gap: 12px;
-          margin-bottom: 16px;
+          grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+          gap: 13px;
+          margin-bottom: 18px;
         }
         .pr-summary-card {
-          background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-          border: 1px solid var(--border, #e2e8f0);
-          border-radius: 14px;
-          padding: 14px 16px;
-          box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
+          position: relative;
+          overflow: hidden;
+          isolation: isolate;
+          background: var(--pr-card);
+          border: 1px solid var(--pr-border);
+          border-radius: 16px;
+          padding: 15px 16px;
+          animation: prRise .5s cubic-bezier(.22,1,.36,1) both;
+          transition: transform .26s cubic-bezier(.22,1,.36,1), box-shadow .26s ease, border-color .26s ease;
+        }
+        .pr-summary-card::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 3px;
+          background: linear-gradient(90deg, var(--sc1), var(--sc2));
+        }
+        .pr-summary-card::after {
+          content: '';
+          position: absolute;
+          top: -50px; right: -50px;
+          width: 140px; height: 140px;
+          border-radius: 50%;
+          background: radial-gradient(circle, var(--sc1) 0%, transparent 68%);
+          opacity: .12;
+          z-index: -1;
+          transition: opacity .35s ease, transform .45s ease;
+        }
+        .pr-summary-card:hover {
+          transform: translateY(-4px);
+          border-color: transparent;
+          box-shadow: 0 20px 34px -18px var(--scs), 0 3px 10px -4px rgba(15,23,42,.06);
+        }
+        .pr-summary-card:hover::after { opacity: .22; transform: scale(1.18); }
+
+        .pr-summary-card.c-indigo { --sc1:#6366f1; --sc2:#818cf8; --scs: rgba(99,102,241,.5); }
+        .pr-summary-card.c-emerald { --sc1:#10b981; --sc2:#34d399; --scs: rgba(16,185,129,.5); }
+        .pr-summary-card.c-amber { --sc1:#f59e0b; --sc2:#fbbf24; --scs: rgba(245,158,11,.5); }
+        .pr-summary-card.c-rose { --sc1:#f43f5e; --sc2:#fb7185; --scs: rgba(244,63,94,.5); }
+
+        .pr-summary-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          margin-bottom: 9px;
         }
         .pr-summary-label {
-          display: block;
           font-size: 11px;
-          letter-spacing: .08em;
+          letter-spacing: .09em;
           text-transform: uppercase;
           color: #64748b;
-          font-weight: 700;
-          margin-bottom: 8px;
+          font-weight: 800;
         }
+        .pr-summary-ico {
+          width: 34px; height: 34px;
+          border-radius: 11px;
+          display: grid;
+          place-items: center;
+          color: #fff;
+          background: linear-gradient(135deg, var(--sc1), var(--sc2));
+          box-shadow: 0 10px 20px -10px var(--scs);
+          transition: transform .34s cubic-bezier(.34,1.56,.64,1);
+        }
+        .pr-summary-card:hover .pr-summary-ico { transform: scale(1.12) rotate(-8deg); }
+        .pr-summary-ico svg { width: 17px; height: 17px; }
         .pr-summary-value {
-          font-size: clamp(18px, 2vw, 28px);
+          font-size: clamp(20px, 2.2vw, 26px);
           font-weight: 800;
           letter-spacing: -.03em;
-          color: var(--n-900, #0f172a);
+          color: var(--pr-text);
           font-variant-numeric: tabular-nums;
+          line-height: 1.1;
         }
         .pr-summary-lite {
           font-size: 12px;
-          color: #64748b;
-          margin-top: 4px;
+          color: var(--pr-muted);
+          margin-top: 5px;
+          font-weight: 600;
         }
 
-        /* ─── Product cards ─── */
+        /* ─── Table panel ─── */
         .pr-panel {
-          background: #fff;
-          border: 1px solid var(--border, #e2e8f0);
-          border-radius: 14px;
+          background: var(--pr-card);
+          border: 1px solid var(--pr-border);
+          border-radius: 16px;
           overflow: hidden;
-          animation: prRise .4s ease .08s both;
+          box-shadow: 0 14px 40px -28px rgba(15,23,42,.35);
+          animation: prRise .5s cubic-bezier(.22,1,.36,1) .1s both;
         }
         .pr-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
         .pr-table thead th {
           text-align: left;
           font-size: 11px;
-          font-weight: 700;
-          letter-spacing: .07em;
+          font-weight: 800;
+          letter-spacing: .08em;
           text-transform: uppercase;
-          color: #94a3b8;
-          padding: 12px 16px;
-          background: #f8fafc;
-          border-bottom: 1px solid var(--border, #e2e8f0);
+          color: var(--pr-soft);
+          padding: 13px 16px;
+          background: linear-gradient(180deg, #f8fafc, #f1f5f9);
+          border-bottom: 1px solid var(--pr-border);
           white-space: nowrap;
         }
         .pr-table tbody td {
-          padding: 12px 16px;
+          padding: 13px 16px;
           border-bottom: 1px solid #f1f5f9;
-          color: #0f172a;
+          color: var(--pr-text);
           vertical-align: middle;
         }
         .pr-table tbody tr:last-child td { border-bottom: none; }
-        .pr-table tbody tr { transition: background .15s ease; }
-        .pr-table tbody tr:hover { background: #f8fafc; }
+        .pr-table tbody tr {
+          animation: prRowIn .4s ease both;
+          transition: background .18s ease, box-shadow .18s ease;
+        }
+        .pr-table tbody tr:hover {
+          background: linear-gradient(90deg, #f8fafc, #ffffff);
+          box-shadow: inset 3px 0 0 #6366f1;
+        }
         .pr-cell-right { text-align: right; }
         .pr-prod-cell {
           display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          gap: 10px;
+          align-items: center;
+          gap: 12px;
+          min-width: 0;
         }
         .pr-prod-avatar {
           width: 42px; height: 42px;
           border-radius: 12px;
-          background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
-          color: #4338ca;
           display: flex;
           align-items: center;
           justify-content: center;
           font-weight: 800;
-          font-size: 14px;
+          font-size: 15px;
           flex-shrink: 0;
+          color: #ffffff;
+          background: linear-gradient(135deg, #6366f1, #8b5cf6);
+          box-shadow: 0 8px 18px -10px rgba(99,102,241,.9);
+          transition: transform .34s cubic-bezier(.34,1.56,.64,1);
         }
-        .pr-card-meta {
-          flex: 1;
-          min-width: 0;
+        .pr-table tbody tr:hover .pr-prod-avatar {
+          transform: scale(1.08) rotate(-6deg);
         }
         .pr-prod-name {
-          font-size: 15px;
+          font-size: 14.5px;
           font-weight: 700;
-          color: #0f172a;
+          color: var(--pr-text);
           line-height: 1.35;
-          margin: 0;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
-        .pr-card-sku {
+        .pr-prod-sku {
           font-size: 11.5px;
-          color: #64748b;
+          color: var(--pr-soft);
           margin-top: 2px;
           font-variant-numeric: tabular-nums;
-        }
-        .pr-card-body {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 8px;
-        }
-        .pr-stat {
-          background: rgba(248, 250, 252, 0.8);
-          border: 1px solid #e2e8f0;
-          border-radius: 10px;
-          padding: 8px 10px;
-        }
-        .pr-stat-label {
-          display: block;
-          font-size: 10px;
-          text-transform: uppercase;
-          letter-spacing: .06em;
-          color: #64748b;
-          font-weight: 700;
-        }
-        .pr-stat-value {
-          display: block;
-          margin-top: 4px;
-          font-size: 13px;
-          font-weight: 700;
-          color: #0f172a;
-          font-variant-numeric: tabular-nums;
-        }
-        .pr-card-footer {
-          display: flex;
+          display: inline-flex;
           align-items: center;
-          justify-content: space-between;
-          gap: 10px;
-          padding-top: 4px;
-          border-top: 1px solid #f1f5f9;
+          gap: 4px;
         }
-        .pr-price { font-weight: 800; font-variant-numeric: tabular-nums; color: #0f172a; }
+        .pr-price {
+          font-weight: 800;
+          font-variant-numeric: tabular-nums;
+          color: #0f172a;
+        }
         .pr-mono {
           font-variant-numeric: tabular-nums;
           font-weight: 600;
-          color: #0f172a;
+          color: var(--pr-text);
         }
-        .pr-actions {
-          display: flex;
-          gap: 4px;
-        }
+        .pr-actions { display: flex; gap: 6px; }
         .pr-act-btn {
-          width: 30px; height: 30px;
-          border-radius: 8px;
+          width: 32px; height: 32px;
+          border-radius: 9px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          background: transparent;
-          border: 1px solid transparent;
+          background: #f8fafc;
+          border: 1px solid var(--pr-border);
           cursor: pointer;
-          color: #64748b;
-          transition: all .18s ease;
+          color: var(--pr-muted);
+          transition: all .2s cubic-bezier(.22,1,.36,1);
         }
         .pr-act-btn:hover {
-          background: #f1f5f9;
-          border-color: #e2e8f0;
-          color: #0f172a;
+          background: #eef2ff;
+          border-color: #c7d2fe;
+          color: #4338ca;
+          transform: translateY(-2px);
+          box-shadow: 0 8px 16px -8px rgba(79,70,229,.7);
         }
         .pr-act-btn.danger:hover {
           background: #fff1f2;
           border-color: #fecdd3;
           color: #e11d48;
+          box-shadow: 0 8px 16px -8px rgba(244,63,94,.7);
         }
+        .pr-act-btn:active { transform: scale(.9); }
+
         .pr-badge {
           display: inline-flex;
           align-items: center;
-          gap: 5px;
-          padding: 3px 9px;
+          gap: 6px;
+          padding: 4px 10px;
           border-radius: 999px;
           font-size: 11px;
-          font-weight: 700;
-          letter-spacing: .02em;
+          font-weight: 800;
+          letter-spacing: .025em;
+          white-space: nowrap;
         }
         .pr-badge::before {
           content: '';
           width: 6px; height: 6px; border-radius: 50%;
           background: currentColor;
+          box-shadow: 0 0 0 3px currentColor;
+          opacity: .9;
         }
 
-        /* ═══════ FORM ═══════ */
+        /* ═══════ FORM (Modal) ═══════ */
         .pr-form { display: flex; flex-direction: column; gap: 18px; }
 
         .pr-section {
-          border: 1px solid var(--border, #e2e8f0);
-          border-radius: 14px;
-          padding: 16px 18px;
-          background: #fbfdff;
-          transition: border-color .2s ease, box-shadow .2s ease;
+          position: relative;
+          overflow: hidden;
+          border: 1px solid var(--pr-border);
+          border-radius: 16px;
+          padding: 17px 18px;
+          background: linear-gradient(135deg, #ffffff 0%, #fbfdff 100%);
+          transition: border-color .22s ease, box-shadow .22s ease, transform .22s ease;
+        }
+        .pr-section::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 3px;
+          background: linear-gradient(90deg, var(--sec1), var(--sec2));
         }
         .pr-section:hover {
           border-color: #cbd5e1;
-          box-shadow: 0 2px 10px rgba(15,23,42,.03);
+          box-shadow: 0 14px 30px -24px rgba(15,23,42,.4);
         }
+        .pr-section.s-indigo { --sec1:#6366f1; --sec2:#818cf8; }
+        .pr-section.s-blue   { --sec1:#3b82f6; --sec2:#60a5fa; }
+        .pr-section.s-violet { --sec1:#8b5cf6; --sec2:#c084fc; }
+        .pr-section.s-green  { --sec1:#10b981; --sec2:#34d399; }
+        .pr-section.s-amber  { --sec1:#f59e0b; --sec2:#fbbf24; }
+        .pr-section.s-rose   { --sec1:#f43f5e; --sec2:#fb7185; }
+
         .pr-section-head {
           display: flex;
           align-items: center;
-          gap: 10px;
-          margin-bottom: 14px;
-          padding-bottom: 10px;
+          gap: 11px;
+          margin-bottom: 15px;
+          padding-bottom: 12px;
           border-bottom: 1px dashed #e2e8f0;
         }
         .pr-section-icon {
-          width: 32px; height: 32px;
-          border-radius: 9px;
+          width: 36px; height: 36px;
+          border-radius: 11px;
           display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
+          color: #fff;
+          background: linear-gradient(135deg, var(--sec1), var(--sec2));
+          box-shadow: 0 10px 20px -10px var(--sec1);
+          transition: transform .34s cubic-bezier(.34,1.56,.64,1);
         }
-        .pr-section-icon svg { width: 16px; height: 16px; }
-        .pr-section-icon.indigo { background: #eef2ff; color: #4f46e5; }
-        .pr-section-icon.blue   { background: #eff6ff; color: #2563eb; }
-        .pr-section-icon.violet { background: #f5f3ff; color: #7c3aed; }
-        .pr-section-icon.green  { background: #ecfdf5; color: #059669; }
-        .pr-section-icon.amber  { background: #fffbeb; color: #d97706; }
-        .pr-section-icon.rose   { background: #fff1f2; color: #e11d48; }
+        .pr-section:hover .pr-section-icon { transform: rotate(-8deg) scale(1.08); }
+        .pr-section-icon svg { width: 17px; height: 17px; }
         .pr-section-title {
           font-size: 13px;
           font-weight: 800;
-          letter-spacing: .04em;
+          letter-spacing: .05em;
           text-transform: uppercase;
           color: #334155;
         }
         .pr-section-sub {
           font-size: 11.5px;
-          color: #94a3b8;
+          color: var(--pr-soft);
           font-weight: 500;
-          margin-top: 1px;
-          letter-spacing: 0;
-          text-transform: none;
+          margin-top: 2px;
         }
 
         .pr-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 12px;
+          gap: 13px;
         }
         .pr-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         .pr-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -438,82 +571,100 @@ export function Products() {
           .pr-grid-3, .pr-grid-2 { grid-template-columns: 1fr; }
         }
 
-        .pr-field { display: flex; flex-direction: column; gap: 5px; }
+        .pr-field { display: flex; flex-direction: column; gap: 6px; }
         .pr-label {
           font-size: 11.5px;
-          font-weight: 700;
-          letter-spacing: .03em;
+          font-weight: 800;
+          letter-spacing: .04em;
           text-transform: uppercase;
-          color: #64748b;
+          color: var(--pr-muted);
         }
         .pr-label .req { color: #e11d48; margin-left: 2px; }
         .pr-field .form-input,
         .pr-field .form-select,
         .pr-field .form-textarea {
-          height: 40px;
+          height: 42px;
           font-size: 13.5px;
           border-radius: 10px;
+          transition: border-color .2s ease, box-shadow .2s ease;
         }
-        .pr-field .form-textarea { height: auto; min-height: 74px; padding: 10px 12px; }
+        .pr-field .form-input:focus,
+        .pr-field .form-select:focus,
+        .pr-field .form-textarea:focus {
+          border-color: #a5b4fc;
+          box-shadow: 0 0 0 3px rgba(99,102,241,.14);
+        }
+        .pr-field .form-textarea { height: auto; min-height: 80px; padding: 11px 12px; }
 
         .pr-hint {
           font-size: 11.5px;
-          color: #94a3b8;
-          padding: 8px 12px;
-          background: #f1f5f9;
-          border-radius: 8px;
-          margin-top: 10px;
+          color: #6366f1;
+          padding: 10px 13px;
+          background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+          border: 1px solid #c7d2fe;
+          border-radius: 10px;
+          margin-top: 12px;
           display: flex;
           align-items: center;
-          gap: 8px;
-          font-weight: 500;
+          gap: 9px;
+          font-weight: 600;
         }
-        .pr-hint svg { flex-shrink: 0; color: #94a3b8; }
+        .pr-hint svg { flex-shrink: 0; }
 
         .pr-toggle {
           display: inline-flex;
           align-items: center;
-          gap: 10px;
-          padding: 8px 12px;
-          border: 1px solid #e2e8f0;
-          border-radius: 10px;
+          gap: 11px;
+          padding: 10px 14px;
+          border: 1px solid var(--pr-border);
+          border-radius: 11px;
           background: #fff;
           cursor: pointer;
-          transition: all .18s ease;
+          transition: all .2s ease;
           user-select: none;
         }
         .pr-toggle:hover { border-color: #c7d2fe; background: #fafaff; }
         .pr-toggle input { display: none; }
         .pr-toggle-box {
-          width: 34px; height: 20px;
+          width: 36px; height: 21px;
           border-radius: 999px;
           background: #cbd5e1;
           position: relative;
-          transition: background .2s ease;
+          transition: background .24s ease;
           flex-shrink: 0;
         }
         .pr-toggle-box::after {
           content: '';
           position: absolute;
           top: 2px; left: 2px;
-          width: 16px; height: 16px;
+          width: 17px; height: 17px;
           border-radius: 50%;
           background: #fff;
-          box-shadow: 0 1px 3px rgba(0,0,0,.15);
-          transition: transform .22s cubic-bezier(.2,.9,.3,1.2);
+          box-shadow: 0 1px 3px rgba(0,0,0,.18);
+          transition: transform .26s cubic-bezier(.2,.9,.3,1.2);
         }
-        .pr-toggle input:checked ~ .pr-toggle-box { background: #4f46e5; }
-        .pr-toggle input:checked ~ .pr-toggle-box::after { transform: translateX(14px); }
+        .pr-toggle input:checked ~ .pr-toggle-box {
+          background: linear-gradient(135deg, #6366f1, #06b6d4);
+        }
+        .pr-toggle input:checked ~ .pr-toggle-box::after { transform: translateX(15px); }
         .pr-toggle-label {
           font-size: 13px;
-          font-weight: 600;
+          font-weight: 700;
           color: #334155;
         }
 
         /* Opening stock highlight */
         .pr-opening {
           background: linear-gradient(135deg, #f5f3ff 0%, #eef2ff 100%);
-          border: 1px solid #c7d2fe;
+          border-color: #c7d2fe;
+        }
+        .pr-opening::before {
+          background: linear-gradient(90deg, #8b5cf6, #6366f1, #06b6d4);
+        }
+        .pr-opening .pr-section-icon {
+          background: linear-gradient(135deg, #8b5cf6, #6366f1);
+          box-shadow: 0 10px 22px -10px rgba(139,92,246,.9);
+          animation: prFloat 3s ease-in-out infinite;
         }
         .pr-opening .pr-section-head { border-bottom-color: #c7d2fe; }
         .pr-opening .pr-section-title { color: #4338ca; }
@@ -522,28 +673,35 @@ export function Products() {
         /* Pricing cards */
         .pr-price-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-          gap: 10px;
+          grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+          gap: 11px;
         }
         .pr-price-card {
+          position: relative;
           background: #fff;
-          border: 1px solid #e2e8f0;
+          border: 1px solid var(--pr-border);
           border-radius: 12px;
-          padding: 10px 12px;
-          transition: all .18s ease;
+          padding: 11px 13px;
+          transition: all .22s cubic-bezier(.22,1,.36,1);
+        }
+        .pr-price-card:hover {
+          border-color: #c7d2fe;
+          transform: translateY(-2px);
+          box-shadow: 0 10px 22px -16px rgba(99,102,241,.6);
         }
         .pr-price-card:focus-within {
           border-color: #a5b4fc;
-          box-shadow: 0 0 0 3px rgba(99,102,241,.12);
+          box-shadow: 0 0 0 3px rgba(99,102,241,.14);
+          transform: translateY(-2px);
         }
         .pr-price-card .pr-label { color: #4f46e5; }
         .pr-price-card input {
           border: none !important;
           background: transparent !important;
-          padding: 2px 0 !important;
+          padding: 3px 0 !important;
           height: auto !important;
-          font-size: 15px !important;
-          font-weight: 700 !important;
+          font-size: 16px !important;
+          font-weight: 800 !important;
           color: #0f172a !important;
           outline: none !important;
           font-variant-numeric: tabular-nums;
@@ -551,11 +709,21 @@ export function Products() {
         }
         .pr-price-card input::placeholder {
           color: #cbd5e1;
-          font-weight: 500;
+          font-weight: 600;
         }
         .pr-price-card.highlight {
           background: linear-gradient(135deg, #eef2ff, #e0e7ff);
           border-color: #c7d2fe;
+          box-shadow: 0 12px 26px -18px rgba(99,102,241,.7);
+        }
+        .pr-price-card.highlight .pr-label { color: #4338ca; }
+
+        @media (prefers-reduced-motion: reduce) {
+          .pr-root *, .pr-root *::before, .pr-root *::after {
+            animation-duration: .001ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: .001ms !important;
+          }
         }
       `}</style>
 
@@ -568,7 +736,7 @@ export function Products() {
             Manage your product catalog with pricing and stock
           </div>
         </div>
-        <button className="btn btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}>
+        <button className="pr-add-btn" onClick={() => { setEditing(null); setModalOpen(true) }}>
           <Plus size={16} /> Add Product
         </button>
       </div>
@@ -591,12 +759,50 @@ export function Products() {
         </select>
       </div>
 
+      {/* Summary Strip */}
+      {products.length > 0 && (
+        <div className="pr-summary-grid">
+          <div className="pr-summary-card c-indigo" style={{ animationDelay: '.02s' }}>
+            <div className="pr-summary-head">
+              <span className="pr-summary-label">Total Products</span>
+              <span className="pr-summary-ico"><Package /></span>
+            </div>
+            <div className="pr-summary-value">{formatNumber(products.length)}</div>
+            <div className="pr-summary-lite">Active in catalog</div>
+          </div>
+          <div className="pr-summary-card c-emerald" style={{ animationDelay: '.06s' }}>
+            <div className="pr-summary-head">
+              <span className="pr-summary-label">Stock Value</span>
+              <span className="pr-summary-ico"><DollarSign /></span>
+            </div>
+            <div className="pr-summary-value">{formatCurrency(summary.totalValue)}</div>
+            <div className="pr-summary-lite">At cost price</div>
+          </div>
+          <div className="pr-summary-card c-amber" style={{ animationDelay: '.10s' }}>
+            <div className="pr-summary-head">
+              <span className="pr-summary-label">Low Stock</span>
+              <span className="pr-summary-ico"><Layers /></span>
+            </div>
+            <div className="pr-summary-value">{formatNumber(summary.lowCount)}</div>
+            <div className="pr-summary-lite">Needs restocking soon</div>
+          </div>
+          <div className="pr-summary-card c-rose" style={{ animationDelay: '.14s' }}>
+            <div className="pr-summary-head">
+              <span className="pr-summary-label">Out of Stock</span>
+              <span className="pr-summary-ico"><Ruler /></span>
+            </div>
+            <div className="pr-summary-value">{formatNumber(summary.outCount)}</div>
+            <div className="pr-summary-lite">Unavailable items</div>
+          </div>
+        </div>
+      )}
+
       {filtered.length === 0 ? (
         <div className="pr-panel">
           <EmptyState
             title="No products found"
             message="Add your first product to get started"
-            action={<button className="btn btn-primary" onClick={() => { setEditing(null); setModalOpen(true) }}><Plus size={16} /> Add Product</button>}
+            action={<button className="pr-add-btn" onClick={() => { setEditing(null); setModalOpen(true) }}><Plus size={16} /> Add Product</button>}
           />
         </div>
       ) : (
@@ -610,21 +816,23 @@ export function Products() {
                 <th className="pr-cell-right">Retail Price</th>
                 <th className="pr-cell-right">Stock</th>
                 <th>Status</th>
-                <th style={{ width: 80 }}>Actions</th>
+                <th style={{ width: 90 }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {visibleProducts.map((p) => {
+              {visibleProducts.map((p, idx) => {
                 const invType = p.category?.inventory_type ?? 'piece'
                 const stockDisplay = invType === 'slab' ? `${formatNumber(p.stock_count)} slabs / ${formatNumber(p.stock_sqft)} Sq.Ft` : invType === 'box' ? `${formatNumber(p.stock_count)} boxes` : `${formatNumber(p.stock_count)} pcs`
                 return (
-                  <tr key={p.id}>
+                  <tr key={p.id} style={{ animationDelay: `${Math.min(idx, 12) * 0.02}s` }}>
                     <td>
                       <div className="pr-prod-cell">
                         <div className="pr-prod-avatar">{p.name.charAt(0).toUpperCase()}</div>
                         <div style={{ minWidth: 0 }}>
                           <div className="pr-prod-name">{p.name}</div>
-                          <div className="pr-prod-sku">{p.sku ?? '—'}</div>
+                          <div className="pr-prod-sku">
+                            {p.sku ? (<><Hash size={11} /> {p.sku}</>) : '—'}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -787,9 +995,9 @@ function ProductForm({ product, categories, subcategories, suppliers, locations,
       <form onSubmit={handleSubmit} className="pr-form">
 
         {/* ── Basic Information ── */}
-        <div className="pr-section">
+        <div className="pr-section s-indigo">
           <div className="pr-section-head">
-            <div className="pr-section-icon indigo"><Package /></div>
+            <div className="pr-section-icon"><Package /></div>
             <div>
               <div className="pr-section-title">Basic Information</div>
               <div className="pr-section-sub">Name and identification details</div>
@@ -820,9 +1028,9 @@ function ProductForm({ product, categories, subcategories, suppliers, locations,
         </div>
 
         {/* ── Classification ── */}
-        <div className="pr-section">
+        <div className="pr-section s-blue">
           <div className="pr-section-head">
-            <div className="pr-section-icon blue"><Layers /></div>
+            <div className="pr-section-icon"><Layers /></div>
             <div>
               <div className="pr-section-title">Classification</div>
               <div className="pr-section-sub">Category and inventory type</div>
@@ -857,9 +1065,9 @@ function ProductForm({ product, categories, subcategories, suppliers, locations,
         </div>
 
         {/* ── Specifications ── */}
-        <div className="pr-section">
+        <div className="pr-section s-violet">
           <div className="pr-section-head">
-            <div className="pr-section-icon violet"><Ruler /></div>
+            <div className="pr-section-icon"><Ruler /></div>
             <div>
               <div className="pr-section-title">Specifications</div>
               <div className="pr-section-sub">Physical attributes and dimensions</div>
@@ -887,7 +1095,7 @@ function ProductForm({ product, categories, subcategories, suppliers, locations,
               <input className="form-input" value={form.finish} onChange={(e) => set('finish', e.target.value)} placeholder="e.g. Polished" />
             </div>
           </div>
-          <div className="pr-grid pr-grid-3" style={{ marginTop: 12 }}>
+          <div className="pr-grid pr-grid-3" style={{ marginTop: 13 }}>
             <div className="pr-field">
               <label className="pr-label">Length (ft)</label>
               <input className="form-input" type="number" step="0.01" value={form.length} onChange={(e) => set('length', e.target.value)} placeholder="0.00" />
@@ -904,9 +1112,9 @@ function ProductForm({ product, categories, subcategories, suppliers, locations,
         </div>
 
         {/* ── Pricing ── */}
-        <div className="pr-section">
+        <div className="pr-section s-green">
           <div className="pr-section-head">
-            <div className="pr-section-icon green"><DollarSign /></div>
+            <div className="pr-section-icon"><DollarSign /></div>
             <div>
               <div className="pr-section-title">Pricing</div>
               <div className="pr-section-sub">Set cost, retail and wholesale rates</div>
@@ -938,7 +1146,7 @@ function ProductForm({ product, categories, subcategories, suppliers, locations,
               <input type="number" step="0.01" value={form.min_selling_price} onChange={(e) => set('min_selling_price', e.target.value)} placeholder="0" />
             </div>
           </div>
-          <div className="pr-grid pr-grid-2" style={{ marginTop: 12 }}>
+          <div className="pr-grid pr-grid-2" style={{ marginTop: 13 }}>
             <div className="pr-field">
               <label className="pr-label">GST Rate (%)</label>
               <input className="form-input" type="number" step="0.01" value={form.gst_rate} onChange={(e) => set('gst_rate', e.target.value)} />
@@ -954,7 +1162,7 @@ function ProductForm({ product, categories, subcategories, suppliers, locations,
         {!product && (
           <div className="pr-section pr-opening">
             <div className="pr-section-head">
-              <div className="pr-section-icon violet"><Sparkles /></div>
+              <div className="pr-section-icon"><Sparkles /></div>
               <div>
                 <div className="pr-section-title">Opening Stock</div>
                 <div className="pr-section-sub">Starting inventory for this product</div>
@@ -978,11 +1186,11 @@ function ProductForm({ product, categories, subcategories, suppliers, locations,
         )}
 
         {/* ── Storage & Supplier ── */}
-        <div className="pr-section">
+        <div className="pr-section s-amber">
           <div className="pr-section-head">
-            <div className="pr-section-icon amber"><MapPin /></div>
+            <div className="pr-section-icon"><MapPin /></div>
             <div>
-              <div className="pr-section-title">Storage & Supplier</div>
+              <div className="pr-section-title">Storage &amp; Supplier</div>
               <div className="pr-section-sub">Location, rack and supplier details</div>
             </div>
           </div>
@@ -1009,15 +1217,15 @@ function ProductForm({ product, categories, subcategories, suppliers, locations,
         </div>
 
         {/* ── Description & Status ── */}
-        <div className="pr-section">
+        <div className="pr-section s-rose">
           <div className="pr-section-head">
-            <div className="pr-section-icon rose"><Info /></div>
+            <div className="pr-section-icon"><Info /></div>
             <div>
               <div className="pr-section-title">Additional Details</div>
               <div className="pr-section-sub">Description and availability</div>
             </div>
           </div>
-          <div className="pr-field" style={{ marginBottom: 12 }}>
+          <div className="pr-field" style={{ marginBottom: 13 }}>
             <label className="pr-label">Description</label>
             <textarea className="form-textarea" value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Optional notes about this product..." />
           </div>

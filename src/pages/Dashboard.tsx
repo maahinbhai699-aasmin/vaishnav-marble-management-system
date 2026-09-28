@@ -32,6 +32,7 @@ interface DashboardData {
 export function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [cartPulse, setCartPulse] = useState(false)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -178,12 +179,11 @@ export function Dashboard() {
     <div className="db-root">
       <style>{`
         .db-root {
-          --db-bg: var(--n-50, #f8fafc);
           --db-card: #ffffff;
-          --db-border: var(--border, #e2e8f0);
-          --db-text: var(--n-900, #0f172a);
-          --db-muted: var(--n-500, #64748b);
-          --db-soft: var(--n-400, #94a3b8);
+          --db-border: #e6ebf2;
+          --db-text: #0f172a;
+          --db-muted: #64748b;
+          --db-soft: #94a3b8;
           animation: dbFade 0.35s ease both;
         }
         @keyframes dbFade {
@@ -191,8 +191,25 @@ export function Dashboard() {
           to { opacity: 1; transform: translateY(0); }
         }
         @keyframes dbRise {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
+          from { opacity: 0; transform: translateY(14px) scale(0.985); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes dbBtnPulse {
+          0%   { box-shadow: 0 0 0 0 rgba(15,23,42,0.45); }
+          100% { box-shadow: 0 0 0 18px rgba(15,23,42,0); }
+        }
+        @keyframes dbCartBounce {
+          0%   { transform: translateY(0) rotate(0deg); }
+          30%  { transform: translateY(-4px) rotate(-10deg); }
+          60%  { transform: translateY(2px) rotate(6deg); }
+          100% { transform: translateY(0) rotate(0deg); }
+        }
+        @keyframes dsPulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(244,63,94,0.42); }
+          50%      { box-shadow: 0 0 0 12px rgba(244,63,94,0); }
+        }
+        @keyframes dbSpinSlow {
+          to { transform: rotate(360deg); }
         }
 
         /* ── Page header ── */
@@ -206,13 +223,17 @@ export function Dashboard() {
         }
         .db-header h2 {
           margin: 0;
-          font-size: 24px;
+          font-size: 26px;
           font-weight: 800;
-          letter-spacing: -0.02em;
-          color: var(--db-text);
+          letter-spacing: -0.025em;
+          background: linear-gradient(92deg, #0f172a 0%, #4338ca 55%, #0891b2 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          color: #0f172a;
         }
         .db-header-sub {
-          margin-top: 4px;
+          margin-top: 5px;
           font-size: 13.5px;
           color: var(--db-muted);
           display: flex;
@@ -220,37 +241,88 @@ export function Dashboard() {
           gap: 8px;
         }
         .db-header-sub .db-dot {
-          width: 6px; height: 6px; border-radius: 50%;
+          width: 7px; height: 7px; border-radius: 50%;
           background: #22c55e;
-          box-shadow: 0 0 0 3px rgba(34,197,94,0.15);
+          box-shadow: 0 0 0 3px rgba(34,197,94,0.18);
+          animation: dsPulse 2.2s ease-in-out infinite;
         }
+
+        /* ── New Sale button — BLACK ── */
+        .db-btn-new {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          gap: 9px;
+          padding: 11px 20px;
+          border-radius: 12px;
+          background: #0f172a;
+          border: 1px solid #0f172a;
+          color: #ffffff !important;
+          font-size: 13.5px;
+          font-weight: 700;
+          letter-spacing: 0.01em;
+          text-decoration: none;
+          overflow: hidden;
+          isolation: isolate;
+          box-shadow: 0 10px 22px -10px rgba(15,23,42,0.75);
+          transition: transform .22s cubic-bezier(.22,1,.36,1), box-shadow .22s ease, background .22s ease;
+        }
+        .db-btn-new svg { color: #ffffff; }
+        .db-btn-new::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(115deg, transparent 32%, rgba(255,255,255,0.28) 50%, transparent 68%);
+          transform: translateX(-130%);
+          z-index: -1;
+          transition: transform .65s ease;
+        }
+        .db-btn-new:hover {
+          background: #1e293b;
+          transform: translateY(-2px);
+          box-shadow: 0 16px 30px -12px rgba(15,23,42,0.85);
+        }
+        .db-btn-new:hover::after { transform: translateX(130%); }
+        .db-btn-new:active { transform: scale(0.95); }
+        .db-btn-new.is-clicked { animation: dbBtnPulse .55s ease-out; }
+        .db-btn-new.is-clicked svg { animation: dbCartBounce .55s cubic-bezier(.34,1.56,.64,1); }
 
         /* ── Section label ── */
         .db-section {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin: 26px 0 12px;
+          margin: 28px 0 13px;
         }
         .db-section-title {
           font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.09em;
+          font-weight: 800;
+          letter-spacing: 0.1em;
           text-transform: uppercase;
-          color: var(--db-muted);
+          color: #475569;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .db-section-title::before {
+          content: '';
+          width: 4px;
+          height: 14px;
+          border-radius: 999px;
+          background: linear-gradient(180deg, #6366f1, #06b6d4);
         }
         .db-section-line {
           flex: 1;
           height: 1px;
-          background: var(--db-border);
+          background: linear-gradient(90deg, var(--db-border), transparent);
           margin-left: 14px;
         }
 
-        /* ── Stat cards (KPI) ── */
+        /* ── KPI cards ── */
         .db-kpi-grid {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 14px;
+          gap: 15px;
         }
         @media (max-width: 1100px) {
           .db-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -262,20 +334,50 @@ export function Dashboard() {
           position: relative;
           background: var(--db-card);
           border: 1px solid var(--db-border);
-          border-radius: 14px;
-          padding: 16px 18px;
+          border-radius: 16px;
+          padding: 17px 18px;
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 13px;
           overflow: hidden;
-          animation: dbRise 0.4s ease both;
-          transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+          isolation: isolate;
+          animation: dbRise .55s cubic-bezier(.22,1,.36,1) both;
+          transition: transform .26s cubic-bezier(.22,1,.36,1), box-shadow .26s ease, border-color .26s ease;
+        }
+        .db-kpi::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 3px;
+          background: linear-gradient(90deg, var(--c1), var(--c2));
+          z-index: 2;
+        }
+        .db-kpi::after {
+          content: '';
+          position: absolute;
+          top: -46px; right: -46px;
+          width: 140px; height: 140px;
+          border-radius: 50%;
+          background: radial-gradient(circle, var(--c1) 0%, transparent 68%);
+          opacity: .12;
+          z-index: -1;
+          transition: opacity .32s ease, transform .45s cubic-bezier(.22,1,.36,1);
         }
         .db-kpi:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-          border-color: #cbd5e1;
+          transform: translateY(-5px);
+          border-color: transparent;
+          box-shadow: 0 20px 34px -18px var(--shadow), 0 3px 10px -4px rgba(15,23,42,.06);
         }
+        .db-kpi:hover::after { opacity: .22; transform: scale(1.18); }
+
+        .db-kpi.c-blue   { --c1:#3b82f6; --c2:#60a5fa; --shadow: rgba(59,130,246,.45); }
+        .db-kpi.c-violet { --c1:#8b5cf6; --c2:#c084fc; --shadow: rgba(139,92,246,.45); }
+        .db-kpi.c-rose   { --c1:#f43f5e; --c2:#fb7185; --shadow: rgba(244,63,94,.45); }
+        .db-kpi.c-green  { --c1:#10b981; --c2:#34d399; --shadow: rgba(16,185,129,.45); }
+        .db-kpi.c-cyan   { --c1:#06b6d4; --c2:#22d3ee; --shadow: rgba(6,182,212,.45); }
+        .db-kpi.c-indigo { --c1:#6366f1; --c2:#818cf8; --shadow: rgba(99,102,241,.45); }
+        .db-kpi.c-amber  { --c1:#f59e0b; --c2:#fbbf24; --shadow: rgba(245,158,11,.45); }
+
         .db-kpi-top {
           display: flex;
           align-items: center;
@@ -284,32 +386,29 @@ export function Dashboard() {
         }
         .db-kpi-label {
           font-size: 12.5px;
-          font-weight: 600;
+          font-weight: 700;
           color: var(--db-muted);
-          letter-spacing: 0.01em;
+          letter-spacing: 0.015em;
         }
         .db-kpi-icon {
-          width: 38px; height: 38px;
-          border-radius: 11px;
+          width: 42px; height: 42px;
+          border-radius: 13px;
           display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
+          background: linear-gradient(135deg, var(--c1), var(--c2));
+          color: #ffffff;
+          box-shadow: 0 10px 20px -10px var(--shadow);
+          transition: transform .34s cubic-bezier(.34,1.56,.64,1);
         }
-        .db-kpi-icon svg { width: 19px; height: 19px; }
-        .db-kpi-icon.blue   { background: #eff6ff; color: #2563eb; }
-        .db-kpi-icon.violet { background: #f5f3ff; color: #7c3aed; }
-        .db-kpi-icon.rose   { background: #fff1f2; color: #e11d48; }
-        .db-kpi-icon.green  { background: #ecfdf5; color: #059669; }
-        .db-kpi-icon.amber  { background: #fffbeb; color: #d97706; }
-        .db-kpi-icon.slate  { background: #f1f5f9; color: #475569; }
-        .db-kpi-icon.cyan   { background: #ecfeff; color: #0891b2; }
-        .db-kpi-icon.indigo { background: #eef2ff; color: #4f46e5; }
+        .db-kpi-icon svg { width: 20px; height: 20px; }
+        .db-kpi:hover .db-kpi-icon { transform: scale(1.1) rotate(-6deg); }
 
         .db-kpi-value {
-          font-size: 22px;
+          font-size: 23px;
           font-weight: 800;
-          letter-spacing: -0.02em;
+          letter-spacing: -0.025em;
           color: var(--db-text);
           line-height: 1.1;
           font-variant-numeric: tabular-nums;
@@ -320,7 +419,7 @@ export function Dashboard() {
           display: flex;
           align-items: center;
           gap: 6px;
-          font-weight: 500;
+          font-weight: 600;
         }
         .db-kpi-foot .db-pos { color: #059669; font-weight: 700; display: inline-flex; align-items: center; gap: 2px; }
         .db-kpi-foot .db-neg { color: #dc2626; font-weight: 700; display: inline-flex; align-items: center; gap: 2px; }
@@ -329,7 +428,7 @@ export function Dashboard() {
         .db-alert-band {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 14px;
+          gap: 15px;
           margin-top: 6px;
         }
         @media (max-width: 1100px) {
@@ -339,71 +438,167 @@ export function Dashboard() {
           .db-alert-band { grid-template-columns: 1fr; }
         }
         .db-alert {
+          position: relative;
           background: var(--db-card);
           border: 1px solid var(--db-border);
-          border-radius: 14px;
-          padding: 14px 16px;
+          border-radius: 16px;
+          padding: 15px 16px;
           display: flex;
           align-items: center;
-          gap: 12px;
-          animation: dbRise 0.4s ease both;
-          transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+          gap: 13px;
+          overflow: hidden;
+          animation: dbRise .55s cubic-bezier(.22,1,.36,1) both;
+          transition: border-color .24s ease, box-shadow .24s ease, transform .24s cubic-bezier(.22,1,.36,1);
+        }
+        .db-alert::before {
+          content: '';
+          position: absolute;
+          left: 0; top: 0; bottom: 0;
+          width: 3px;
+          background: linear-gradient(180deg, var(--c1), var(--c2));
         }
         .db-alert:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+          transform: translateY(-4px);
+          border-color: transparent;
+          box-shadow: 0 18px 30px -18px var(--shadow);
         }
+        .db-alert.a-amber { --c1:#f59e0b; --c2:#fbbf24; --shadow: rgba(245,158,11,.5); }
+        .db-alert.a-rose  { --c1:#f43f5e; --c2:#fb7185; --shadow: rgba(244,63,94,.5); }
+        .db-alert.a-blue  { --c1:#3b82f6; --c2:#60a5fa; --shadow: rgba(59,130,246,.5); }
+        .db-alert.a-slate { --c1:#6366f1; --c2:#8b5cf6; --shadow: rgba(99,102,241,.5); }
+
         .db-alert-icon {
-          width: 40px; height: 40px;
-          border-radius: 11px;
+          width: 44px; height: 44px;
+          border-radius: 13px;
           display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
+          background: linear-gradient(135deg, var(--c1), var(--c2));
+          color: #ffffff;
+          box-shadow: 0 10px 20px -10px var(--shadow);
+          transition: transform .34s cubic-bezier(.34,1.56,.64,1);
         }
-        .db-alert-icon svg { width: 19px; height: 19px; }
-        .db-alert-icon.amber { background: #fffbeb; color: #d97706; }
-        .db-alert-icon.rose  { background: #fff1f2; color: #e11d48; }
-        .db-alert-icon.blue  { background: #eff6ff; color: #2563eb; }
-        .db-alert-icon.slate { background: #f1f5f9; color: #475569; }
+        .db-alert-icon svg { width: 20px; height: 20px; }
+        .db-alert:hover .db-alert-icon { transform: scale(1.08) rotate(6deg); }
+
         .db-alert-body { min-width: 0; flex: 1; }
         .db-alert-label {
           font-size: 12px;
-          font-weight: 600;
+          font-weight: 700;
           color: var(--db-muted);
-          letter-spacing: 0.01em;
-          margin-bottom: 2px;
+          letter-spacing: 0.015em;
+          margin-bottom: 3px;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
         .db-alert-value {
-          font-size: 17px;
+          font-size: 18px;
           font-weight: 800;
           color: var(--db-text);
-          letter-spacing: -0.01em;
+          letter-spacing: -0.015em;
           font-variant-numeric: tabular-nums;
         }
+
+        /* ── Dead stock banner ── */
+        .db-root .dead-stock-banner {
+          position: relative;
+          display: flex;
+          align-items: center;
+          gap: 15px;
+          padding: 16px 18px;
+          border-radius: 16px;
+          background: linear-gradient(135deg, #fff1f2 0%, #fff7ed 100%);
+          border: 1px solid #fecdd3;
+          overflow: hidden;
+          animation: dbRise .55s cubic-bezier(.22,1,.36,1) both;
+        }
+        .db-root .dead-stock-banner::before {
+          content: '';
+          position: absolute;
+          left: 0; top: 0; bottom: 0;
+          width: 4px;
+          background: linear-gradient(180deg, #f43f5e, #fb923c);
+        }
+        .db-root .ds-icon {
+          width: 46px; height: 46px;
+          border-radius: 14px;
+          display: grid;
+          place-items: center;
+          flex-shrink: 0;
+          background: linear-gradient(135deg, #f43f5e, #fb7185);
+          color: #ffffff;
+          animation: dsPulse 2.4s ease-in-out infinite;
+        }
+        .db-root .ds-icon svg { width: 21px; height: 21px; }
+        .db-root .ds-body { min-width: 0; flex: 1; }
+        .db-root .ds-title {
+          font-size: 14px;
+          font-weight: 800;
+          color: #9f1239;
+          letter-spacing: -0.01em;
+        }
+        .db-root .ds-sub {
+          font-size: 12.5px;
+          color: #9f1239;
+          opacity: .82;
+          margin-top: 3px;
+          line-height: 1.5;
+        }
+        .db-root .ds-count {
+          margin-left: auto;
+          flex-shrink: 0;
+          min-width: 48px;
+          height: 48px;
+          padding: 0 13px;
+          border-radius: 14px;
+          display: grid;
+          place-items: center;
+          font-size: 21px;
+          font-weight: 800;
+          color: #ffffff;
+          background: linear-gradient(135deg, #f43f5e, #fb923c);
+          box-shadow: 0 12px 24px -12px rgba(244,63,94,.9);
+        }
+
+        /* ── Dead stock list ── */
         .db-deadstock-list {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 10px;
+          grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+          gap: 11px;
           padding: 16px 18px 18px;
         }
         .db-deadstock-item {
+          position: relative;
           border: 1px solid var(--db-border);
-          border-radius: 12px;
-          background: #fbfdff;
-          padding: 12px 14px;
+          border-radius: 13px;
+          background: linear-gradient(135deg, #fbfdff, #f8fafc);
+          padding: 13px 14px;
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          gap: 7px;
+          overflow: hidden;
+          transition: transform .24s cubic-bezier(.22,1,.36,1), border-color .24s ease, box-shadow .24s ease;
+        }
+        .db-deadstock-item::before {
+          content: '';
+          position: absolute;
+          left: 0; top: 0; bottom: 0;
+          width: 3px;
+          background: linear-gradient(180deg, #fb923c, #f43f5e);
+          opacity: .85;
+        }
+        .db-deadstock-item:hover {
+          transform: translateY(-3px);
+          border-color: #fecdd3;
+          box-shadow: 0 14px 26px -16px rgba(244,63,94,.55);
         }
         .db-deadstock-name {
           font-size: 13.5px;
           font-weight: 700;
           color: var(--db-text);
-          line-height: 1.3;
+          line-height: 1.32;
         }
         .db-deadstock-meta {
           display: flex;
@@ -416,59 +611,87 @@ export function Dashboard() {
         .db-deadstock-pill {
           display: inline-flex;
           align-items: center;
-          padding: 3px 7px;
+          padding: 3px 8px;
           border-radius: 999px;
-          background: #f1f5f9;
-          color: var(--db-muted);
+          background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+          color: #4338ca;
           font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.04em;
+          font-weight: 800;
+          letter-spacing: 0.05em;
           text-transform: uppercase;
         }
 
-        /* ── Panel (generic card) ── */
+        /* ── Panel ── */
         .db-panel {
           background: var(--db-card);
           border: 1px solid var(--db-border);
-          border-radius: 14px;
+          border-radius: 16px;
           overflow: hidden;
-          animation: dbRise 0.45s ease both;
+          animation: dbRise .6s cubic-bezier(.22,1,.36,1) both;
+          transition: box-shadow .26s ease, border-color .26s ease;
+        }
+        .db-panel:hover {
+          box-shadow: 0 20px 40px -28px rgba(15,23,42,.35);
+          border-color: #dbe3ee;
         }
         .db-panel-head {
           display: flex;
           align-items: center;
           justify-content: space-between;
+          gap: 12px;
           padding: 14px 18px;
           border-bottom: 1px solid var(--db-border);
+          background: linear-gradient(180deg, #fbfdff, #ffffff);
         }
         .db-panel-title {
           font-size: 14px;
-          font-weight: 700;
+          font-weight: 800;
           color: var(--db-text);
-          letter-spacing: -0.01em;
+          letter-spacing: -0.012em;
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 9px;
         }
-        .db-panel-title svg { color: var(--db-muted); }
+        .db-pt-ico {
+          width: 30px; height: 30px;
+          border-radius: 10px;
+          display: grid;
+          place-items: center;
+          flex-shrink: 0;
+          color: #ffffff;
+          background: linear-gradient(135deg, #6366f1, #8b5cf6);
+          box-shadow: 0 8px 16px -8px rgba(99,102,241,.8);
+        }
+        .db-pt-ico.p-indigo { background: linear-gradient(135deg, #6366f1, #818cf8); box-shadow: 0 8px 16px -8px rgba(99,102,241,.8); }
+        .db-pt-ico.p-cyan   { background: linear-gradient(135deg, #06b6d4, #22d3ee); box-shadow: 0 8px 16px -8px rgba(6,182,212,.8); }
+        .db-pt-ico.p-green  { background: linear-gradient(135deg, #10b981, #34d399); box-shadow: 0 8px 16px -8px rgba(16,185,129,.8); }
+        .db-pt-ico.p-amber  { background: linear-gradient(135deg, #f59e0b, #fbbf24); box-shadow: 0 8px 16px -8px rgba(245,158,11,.8); }
+        .db-pt-ico.p-rose   { background: linear-gradient(135deg, #f43f5e, #fb7185); box-shadow: 0 8px 16px -8px rgba(244,63,94,.8); }
+
         .db-panel-link {
           display: inline-flex;
           align-items: center;
           gap: 4px;
           font-size: 12.5px;
-          font-weight: 600;
+          font-weight: 700;
           color: var(--db-muted);
           text-decoration: none;
-          transition: color 0.18s ease, gap 0.18s ease;
+          padding: 5px 10px;
+          border-radius: 9px;
+          transition: color .18s ease, gap .18s ease, background .18s ease;
         }
-        .db-panel-link:hover { color: #4f46e5; gap: 6px; }
+        .db-panel-link:hover {
+          color: #4f46e5;
+          gap: 7px;
+          background: #eef2ff;
+        }
 
         /* ── Table ── */
         .db-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
         .db-table thead th {
           text-align: left;
           font-size: 11px;
-          font-weight: 700;
+          font-weight: 800;
           letter-spacing: 0.07em;
           text-transform: uppercase;
           color: var(--db-soft);
@@ -484,11 +707,16 @@ export function Dashboard() {
           vertical-align: middle;
         }
         .db-table tbody tr:last-child td { border-bottom: none; }
-        .db-table tbody tr { transition: background 0.15s ease; }
-        .db-table tbody tr:hover { background: #f8fafc; }
+        .db-table tbody tr {
+          transition: background .16s ease, box-shadow .16s ease;
+        }
+        .db-table tbody tr:hover {
+          background: #f8fafc;
+          box-shadow: inset 3px 0 0 #6366f1;
+        }
         .db-table .db-cell-right { text-align: right; }
         .db-invoice {
-          font-weight: 600;
+          font-weight: 700;
           color: var(--db-text);
           font-variant-numeric: tabular-nums;
         }
@@ -499,17 +727,18 @@ export function Dashboard() {
           min-width: 0;
         }
         .db-avatar {
-          width: 30px; height: 30px;
+          width: 32px; height: 32px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
-          color: #4338ca;
+          background: linear-gradient(135deg, #6366f1, #8b5cf6);
+          color: #ffffff;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-weight: 700;
+          font-weight: 800;
           font-size: 12px;
           flex-shrink: 0;
           letter-spacing: -0.02em;
+          box-shadow: 0 6px 14px -8px rgba(99,102,241,.9);
         }
         .db-customer-name {
           font-weight: 600;
@@ -518,25 +747,27 @@ export function Dashboard() {
           text-overflow: ellipsis;
         }
         .db-amount {
-          font-weight: 700;
+          font-weight: 800;
           font-variant-numeric: tabular-nums;
           color: var(--db-text);
         }
         .db-date {
           font-size: 12px;
           color: var(--db-soft);
+          margin-top: 2px;
         }
         .db-empty {
-          padding: 40px 20px;
+          padding: 44px 20px;
           text-align: center;
           color: var(--db-soft);
           font-size: 13px;
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: 6px;
+          gap: 8px;
+          font-weight: 600;
         }
-        .db-empty svg { opacity: 0.4; }
+        .db-empty svg { opacity: 0.35; }
 
         /* ── Bottom grid ── */
         .db-bottom-grid {
@@ -553,20 +784,22 @@ export function Dashboard() {
         .db-badge {
           display: inline-flex;
           align-items: center;
-          gap: 5px;
-          padding: 3px 9px;
+          gap: 6px;
+          padding: 4px 10px;
           border-radius: 999px;
           font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.02em;
+          font-weight: 800;
+          letter-spacing: 0.025em;
           text-transform: capitalize;
           line-height: 1.4;
+          white-space: nowrap;
         }
         .db-badge::before {
           content: '';
           width: 6px; height: 6px;
           border-radius: 50%;
           background: currentColor;
+          flex-shrink: 0;
         }
         .db-badge.paid    { background: #ecfdf5; color: #047857; }
         .db-badge.partial { background: #fffbeb; color: #b45309; }
@@ -576,67 +809,108 @@ export function Dashboard() {
         .db-cat-strip {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-          gap: 12px;
+          gap: 13px;
           padding: 16px 18px;
         }
         .db-cat {
+          position: relative;
           border: 1px solid var(--db-border);
-          border-radius: 12px;
-          padding: 14px;
-          background: #fbfdff;
-          transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+          border-radius: 14px;
+          padding: 15px;
+          background: linear-gradient(135deg, #fbfdff, #f7f9fc);
+          overflow: hidden;
+          animation: dbRise .5s cubic-bezier(.22,1,.36,1) both;
+          transition: border-color .22s ease, box-shadow .22s ease, transform .22s cubic-bezier(.22,1,.36,1);
+        }
+        .db-cat::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0;
+          height: 3px;
+          background: linear-gradient(90deg, var(--cc1), var(--cc2));
+        }
+        .db-cat::after {
+          content: '';
+          position: absolute;
+          top: -40px; right: -40px;
+          width: 110px; height: 110px;
+          border-radius: 50%;
+          background: radial-gradient(circle, var(--cc1) 0%, transparent 70%);
+          opacity: .1;
+          transition: opacity .3s ease, transform .4s ease;
         }
         .db-cat:hover {
-          border-color: #c7d2fe;
-          box-shadow: 0 6px 16px rgba(79, 70, 229, 0.06);
-          transform: translateY(-2px);
+          border-color: transparent;
+          transform: translateY(-4px);
+          box-shadow: 0 18px 32px -20px var(--ccs);
         }
+        .db-cat:hover::after { opacity: .22; transform: scale(1.2); }
+
+        .db-cat:nth-child(6n+1) { --cc1:#6366f1; --cc2:#818cf8; --ccs: rgba(99,102,241,.7); }
+        .db-cat:nth-child(6n+2) { --cc1:#06b6d4; --cc2:#22d3ee; --ccs: rgba(6,182,212,.7); }
+        .db-cat:nth-child(6n+3) { --cc1:#10b981; --cc2:#34d399; --ccs: rgba(16,185,129,.7); }
+        .db-cat:nth-child(6n+4) { --cc1:#f59e0b; --cc2:#fbbf24; --ccs: rgba(245,158,11,.7); }
+        .db-cat:nth-child(6n+5) { --cc1:#f43f5e; --cc2:#fb7185; --ccs: rgba(244,63,94,.7); }
+        .db-cat:nth-child(6n+6) { --cc1:#8b5cf6; --cc2:#c084fc; --ccs: rgba(139,92,246,.7); }
+
         .db-cat-top {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin-bottom: 10px;
+          gap: 8px;
+          margin-bottom: 11px;
+          position: relative;
         }
         .db-cat-name {
           font-size: 13.5px;
-          font-weight: 700;
+          font-weight: 800;
           color: var(--db-text);
-          letter-spacing: -0.01em;
+          letter-spacing: -0.012em;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
         .db-cat-type {
           font-size: 10px;
-          font-weight: 700;
+          font-weight: 800;
           letter-spacing: 0.06em;
           text-transform: uppercase;
-          color: var(--db-muted);
-          background: #f1f5f9;
-          padding: 3px 7px;
-          border-radius: 6px;
+          color: var(--cc1);
+          background: #ffffff;
+          border: 1px solid var(--db-border);
+          padding: 3px 8px;
+          border-radius: 7px;
           flex-shrink: 0;
         }
         .db-cat-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 8px;
+          gap: 10px;
+          position: relative;
         }
         .db-cat-stat {
           display: flex;
           flex-direction: column;
-          gap: 2px;
+          gap: 3px;
         }
         .db-cat-stat-label {
           font-size: 11px;
           color: var(--db-soft);
-          font-weight: 500;
+          font-weight: 600;
         }
         .db-cat-stat-value {
-          font-size: 13.5px;
-          font-weight: 700;
+          font-size: 14px;
+          font-weight: 800;
           color: var(--db-text);
           font-variant-numeric: tabular-nums;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .db-root *, .db-root *::before, .db-root *::after {
+            animation-duration: 0.001ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.001ms !important;
+          }
         }
       `}</style>
 
@@ -649,8 +923,16 @@ export function Dashboard() {
             {today} · Overview of your business performance
           </div>
         </div>
-        <Link to="/pos" className="btn btn-primary">
-          <ShoppingCart size={16} /> New Sale
+        <Link
+          to="/pos"
+          className={`db-btn-new${cartPulse ? ' is-clicked' : ''}`}
+          onClick={() => {
+            setCartPulse(true)
+            window.setTimeout(() => setCartPulse(false), 600)
+          }}
+        >
+          <ShoppingCart size={16} />
+          New Sale
         </Link>
       </div>
 
@@ -660,10 +942,10 @@ export function Dashboard() {
         <span className="db-section-line" />
       </div>
       <div className="db-kpi-grid">
-        <div className="db-kpi" style={{ animationDelay: '0.02s' }}>
+        <div className="db-kpi c-blue" style={{ animationDelay: '0.02s' }}>
           <div className="db-kpi-top">
             <span className="db-kpi-label">Today's Sales</span>
-            <span className="db-kpi-icon blue"><TrendingUp /></span>
+            <span className="db-kpi-icon"><TrendingUp /></span>
           </div>
           <div className="db-kpi-value">{formatCurrency(data.todaySales)}</div>
           <div className="db-kpi-foot">
@@ -672,10 +954,10 @@ export function Dashboard() {
           </div>
         </div>
 
-        <div className="db-kpi" style={{ animationDelay: '0.06s' }}>
+        <div className="db-kpi c-violet" style={{ animationDelay: '0.06s' }}>
           <div className="db-kpi-top">
             <span className="db-kpi-label">Today's Purchase</span>
-            <span className="db-kpi-icon violet"><ArrowDownRight /></span>
+            <span className="db-kpi-icon"><ArrowDownRight /></span>
           </div>
           <div className="db-kpi-value">{formatCurrency(data.todayPurchase)}</div>
           <div className="db-kpi-foot">
@@ -684,10 +966,10 @@ export function Dashboard() {
           </div>
         </div>
 
-        <div className="db-kpi" style={{ animationDelay: '0.10s' }}>
+        <div className="db-kpi c-rose" style={{ animationDelay: '0.10s' }}>
           <div className="db-kpi-top">
             <span className="db-kpi-label">Today's Expenses</span>
-            <span className="db-kpi-icon rose"><Wallet /></span>
+            <span className="db-kpi-icon"><Wallet /></span>
           </div>
           <div className="db-kpi-value">{formatCurrency(data.todayExpenses)}</div>
           <div className="db-kpi-foot">
@@ -696,10 +978,10 @@ export function Dashboard() {
           </div>
         </div>
 
-        <div className="db-kpi" style={{ animationDelay: '0.14s' }}>
+        <div className="db-kpi c-green" style={{ animationDelay: '0.14s' }}>
           <div className="db-kpi-top">
             <span className="db-kpi-label">Today's Profit</span>
-            <span className="db-kpi-icon green"><DollarSign /></span>
+            <span className="db-kpi-icon"><DollarSign /></span>
           </div>
           <div className="db-kpi-value">{formatCurrency(data.todayProfit)}</div>
           <div className="db-kpi-foot">
@@ -719,37 +1001,37 @@ export function Dashboard() {
         <span className="db-section-line" />
       </div>
       <div className="db-kpi-grid">
-        <div className="db-kpi" style={{ animationDelay: '0.16s' }}>
+        <div className="db-kpi c-indigo" style={{ animationDelay: '0.16s' }}>
           <div className="db-kpi-top">
             <span className="db-kpi-label">Total Products</span>
-            <span className="db-kpi-icon indigo"><Package /></span>
+            <span className="db-kpi-icon"><Package /></span>
           </div>
           <div className="db-kpi-value">{formatNumber(data.totalProducts)}</div>
           <div className="db-kpi-foot">Active products</div>
         </div>
 
-        <div className="db-kpi" style={{ animationDelay: '0.20s' }}>
+        <div className="db-kpi c-cyan" style={{ animationDelay: '0.20s' }}>
           <div className="db-kpi-top">
             <span className="db-kpi-label">Total Slabs</span>
-            <span className="db-kpi-icon cyan"><Layers /></span>
+            <span className="db-kpi-icon"><Layers /></span>
           </div>
           <div className="db-kpi-value">{formatNumber(data.totalSlabs)}</div>
           <div className="db-kpi-foot">In stock</div>
         </div>
 
-        <div className="db-kpi" style={{ animationDelay: '0.24s' }}>
+        <div className="db-kpi c-blue" style={{ animationDelay: '0.24s' }}>
           <div className="db-kpi-top">
             <span className="db-kpi-label">Total Sq.Ft</span>
-            <span className="db-kpi-icon blue"><Boxes /></span>
+            <span className="db-kpi-icon"><Boxes /></span>
           </div>
           <div className="db-kpi-value">{formatNumber(data.totalSqft)}</div>
           <div className="db-kpi-foot">Remaining area</div>
         </div>
 
-        <div className="db-kpi" style={{ animationDelay: '0.28s' }}>
+        <div className="db-kpi c-green" style={{ animationDelay: '0.28s' }}>
           <div className="db-kpi-top">
             <span className="db-kpi-label">Stock Value</span>
-            <span className="db-kpi-icon green"><DollarSign /></span>
+            <span className="db-kpi-icon"><DollarSign /></span>
           </div>
           <div className="db-kpi-value">{formatCurrency(data.totalStockValue)}</div>
           <div className="db-kpi-foot">At cost price</div>
@@ -759,7 +1041,7 @@ export function Dashboard() {
       {/* Dead Stock Alert */}
       {data.deadStockCount > 0 && (
         <>
-          <div className="dead-stock-banner" style={{ marginTop: 4, marginBottom: 4 }}>
+          <div className="dead-stock-banner" style={{ marginTop: 18, marginBottom: 4 }}>
             <div className="ds-icon"><AlertOctagon /></div>
             <div className="ds-body">
               <div className="ds-title">Dead Stock Alert</div>
@@ -770,7 +1052,8 @@ export function Dashboard() {
           <div className="db-panel" style={{ marginBottom: 12 }}>
             <div className="db-panel-head">
               <div className="db-panel-title">
-                <AlertOctagon size={16} /> Dead Stock by Product & Category
+                <span className="db-pt-ico p-rose"><AlertOctagon size={16} /></span>
+                Dead Stock by Product &amp; Category
               </div>
             </div>
             <div className="db-deadstock-list">
@@ -792,33 +1075,33 @@ export function Dashboard() {
 
       {/* Alerts & Dues */}
       <div className="db-section">
-        <span className="db-section-title">Alerts & Dues</span>
+        <span className="db-section-title">Alerts &amp; Dues</span>
         <span className="db-section-line" />
       </div>
       <div className="db-alert-band">
-        <div className="db-alert" style={{ animationDelay: '0.30s' }}>
-          <div className="db-alert-icon amber"><AlertTriangle /></div>
+        <div className="db-alert a-amber" style={{ animationDelay: '0.30s' }}>
+          <div className="db-alert-icon"><AlertTriangle /></div>
           <div className="db-alert-body">
             <div className="db-alert-label">Low Stock Items</div>
             <div className="db-alert-value">{formatNumber(data.lowStock)}</div>
           </div>
         </div>
-        <div className="db-alert" style={{ animationDelay: '0.33s' }}>
-          <div className="db-alert-icon rose"><AlertTriangle /></div>
+        <div className="db-alert a-rose" style={{ animationDelay: '0.33s' }}>
+          <div className="db-alert-icon"><AlertTriangle /></div>
           <div className="db-alert-body">
             <div className="db-alert-label">Out of Stock</div>
             <div className="db-alert-value">{formatNumber(data.outOfStock)}</div>
           </div>
         </div>
-        <div className="db-alert" style={{ animationDelay: '0.36s' }}>
-          <div className="db-alert-icon blue"><Users /></div>
+        <div className="db-alert a-blue" style={{ animationDelay: '0.36s' }}>
+          <div className="db-alert-icon"><Users /></div>
           <div className="db-alert-body">
             <div className="db-alert-label">Customer Due</div>
             <div className="db-alert-value">{formatCurrency(data.customerDue)}</div>
           </div>
         </div>
-        <div className="db-alert" style={{ animationDelay: '0.39s' }}>
-          <div className="db-alert-icon slate"><Truck /></div>
+        <div className="db-alert a-slate" style={{ animationDelay: '0.39s' }}>
+          <div className="db-alert-icon"><Truck /></div>
           <div className="db-alert-body">
             <div className="db-alert-label">Supplier Due</div>
             <div className="db-alert-value">{formatCurrency(data.supplierDue)}</div>
@@ -834,8 +1117,9 @@ export function Dashboard() {
       <div className="db-panel" style={{ animationDelay: '0.42s' }}>
         <div className="db-panel-head">
           <div className="db-panel-title">
-            <Boxes size={16} /> Categories
-            <span className="db-badge" style={{ background: '#eef2ff', color: '#4338ca', marginLeft: 6 }}>
+            <span className="db-pt-ico p-indigo"><Boxes size={16} /></span>
+            Categories
+            <span className="db-badge" style={{ background: '#eef2ff', color: '#4338ca' }}>
               {data.categoryStats.length}
             </span>
           </div>
@@ -891,7 +1175,8 @@ export function Dashboard() {
         <div className="db-panel" style={{ animationDelay: '0.46s' }}>
           <div className="db-panel-head">
             <div className="db-panel-title">
-              <TrendingUp size={16} /> Recent Sales
+              <span className="db-pt-ico p-green"><TrendingUp size={16} /></span>
+              Recent Sales
             </div>
             <Link to="/sales" className="db-panel-link">
               View All <ChevronRight size={14} />
@@ -944,7 +1229,8 @@ export function Dashboard() {
         <div className="db-panel" style={{ animationDelay: '0.50s' }}>
           <div className="db-panel-head">
             <div className="db-panel-title">
-              <Truck size={16} /> Recent Purchases
+              <span className="db-pt-ico p-amber"><Truck size={16} /></span>
+              Recent Purchases
             </div>
             <Link to="/purchases" className="db-panel-link">
               View All <ChevronRight size={14} />
@@ -975,7 +1261,7 @@ export function Dashboard() {
                     </td>
                     <td>
                       <div className="db-customer">
-                        <div className="db-avatar" style={{ background: 'linear-gradient(135deg, #fef3c7, #fde68a)', color: '#b45309' }}>
+                        <div className="db-avatar" style={{ background: 'linear-gradient(135deg, #f59e0b, #fbbf24)', boxShadow: '0 6px 14px -8px rgba(245,158,11,.9)' }}>
                           {p.supplier_name.charAt(0).toUpperCase()}
                         </div>
                         <span className="db-customer-name">{p.supplier_name}</span>
