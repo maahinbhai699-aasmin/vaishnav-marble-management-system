@@ -138,7 +138,7 @@ export function POS() {
 
   const addSlabToCart = (slab: Slab, sellSqft: number, isFull: boolean) => {
     const product = slab.product as Product
-    const sqft = isFull ? slab.total_sqft : sellSqft
+    const sqft = isFull ? Number(slab.remaining_sqft) : sellSqft
     const amount = sqft * Number(slab.selling_rate)
     setCart([...cart, {
       product_id: product.id,
@@ -338,6 +338,16 @@ export function POS() {
           background: linear-gradient(135deg, #fff7ed, #ffffff);
           border-color: rgba(251,146,60,0.2);
           color: #9a4d00;
+        }
+        @media (max-width: 900px) {
+          .pos-shell {
+            grid-template-columns: 1fr !important;
+            height: auto !important;
+          }
+          .pos-shell > .card {
+            position: static !important;
+            max-height: none !important;
+          }
         }
       `}</style>
       {/* ═════════════ LEFT: PRODUCT SELECTION ═════════════ */}

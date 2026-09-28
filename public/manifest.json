@@ -1,0 +1,42 @@
+{
+  "name": "Vaishnav Marble Shop Management",
+  "short_name": "Vaishnav Marble",
+  "description": "Inventory, billing & business management for marble/granite shops",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#080b12",
+  "theme_color": "#0f56bd",
+  "categories": ["business", "productivity", "shopping"],
+  "icons": [
+    {
+      "src": "/vaishnavi-marble-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Sale",
+      "url": "/pos",
+      "description": "Create a new sale/invoice"
+    },
+    {
+      "name": "Dashboard",
+      "url": "/",
+      "description": "View business overview"
+    },
+    {
+      "name": "Reports",
+      "url": "/reports",
+      "description": "View business reports"
+    }
+  ]
+}

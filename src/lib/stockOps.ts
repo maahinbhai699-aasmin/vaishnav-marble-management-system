@@ -164,12 +164,14 @@ export async function createSlabFromPurchase(
 }
 
 export async function sellSlabFull(slab: Slab, saleId: string, invoiceNumber: string): Promise<void> {
+  const remainingSqft = Number(slab.remaining_sqft)
+
   // Mark slab as sold
   await supabase
     .from('slabs')
     .update({
       status: 'sold',
-      sold_sqft: slab.total_sqft,
+      sold_sqft: Number(slab.sold_sqft) + remainingSqft,
       remaining_sqft: 0,
       updated_at: new Date().toISOString(),
     })
@@ -183,9 +185,9 @@ export async function sellSlabFull(slab: Slab, saleId: string, invoiceNumber: st
     reference_number: invoiceNumber,
     reference_id: saleId,
     stock_out_count: 1,
-    stock_out_sqft: slab.total_sqft,
+    stock_out_sqft: remainingSqft,
     unit: 'Slab',
-    cost_price: slab.purchase_rate,
+    cost_price: Number(slab.purchase_rate) * (remainingSqft / Number(slab.total_sqft)),
     selling_price: slab.selling_rate,
     remarks: `Full slab sale: ${slab.slab_number}`,
   })
