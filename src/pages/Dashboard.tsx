@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatCurrency, formatNumber } from '../lib/utils'
 import { Loading } from '../components/Feedback'
+import { useToast } from '../components/AppShell'
 import {
   TrendingUp, Wallet, Package, Layers, Boxes, AlertTriangle,
   Users, Truck, DollarSign, ShoppingCart, ArrowDownRight, ArrowUpRight, ChevronRight,
@@ -25,11 +26,19 @@ interface DashboardData {
   recentSales: Array<{ id: string; invoice_number: string; customer_name: string; grand_total: number; sale_date: string; payment_status: string }>
   recentPurchases: Array<{ id: string; invoice_number: string; supplier_name: string; total_amount: number; purchase_date: string }>
   categoryStats: Array<{ name: string; inventory_type: string; total_count: number; total_sqft: number; available_count: number; available_sqft: number }>
-  deadStockCount: number
+  deadStockCount: number | null
   deadStockProducts: Array<{ name: string; category_name: string | null; lastSaleDate: string | null; stockCount: number; stockValue: number }>
+  deadStockError: boolean
+}
+
+function getJoinedSaleDate(relation: unknown): string | null {
+  const sale = Array.isArray(relation) ? relation[0] : relation
+  if (!sale || typeof sale !== 'object' || !('sale_date' in sale)) return null
+  return typeof sale.sale_date === 'string' ? sale.sale_date : null
 }
 
 export function Dashboard() {
+  const toast = useToast()
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [cartPulse, setCartPulse] = useState(false)
@@ -74,43 +83,63 @@ export function Dashboard() {
     const oneYearAgo = new Date(); oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
     const oneYearAgoStr = oneYearAgo.toISOString().split('T')[0]
 
-    const [recentSales, recentPurchases, categories, allSaleItems] = await Promise.all([
+    const [recentSales, recentPurchases, categories] = await Promise.all([
       supabase.from('sales').select('id, invoice_number, customer_name, grand_total, sale_date, payment_status').order('created_at', { ascending: false }).limit(5),
       supabase.from('purchases').select('id, invoice_number, total_amount, purchase_date, supplier:suppliers(name)').order('created_at', { ascending: false }).limit(5),
       supabase.from('categories').select('id, name, inventory_type, display_order').order('display_order'),
-      supabase.from('sale_items').select('product_id, sale:sales(sale_date)'),
     ])
 
     // Build map of last sale date per product
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const lastSaleByProduct: Record<string, string> = {}
-    for (const si of (allSaleItems.data ?? []) as any[]) {
-      const pid = si.product_id
-      if (!pid) continue
-      const saleDate = si.sale?.sale_date
-      if (!saleDate) continue
-      if (!lastSaleByProduct[pid] || saleDate > lastSaleByProduct[pid]) {
-        lastSaleByProduct[pid] = saleDate
+    let deadStockError = false
+    const saleItemsPageSize = 1000
+    try {
+      for (let from = 0; ; from += saleItemsPageSize) {
+        const { data: saleItems, error } = await supabase
+          .from('sale_items')
+          .select('id, product_id, sale:sales(sale_date)')
+          .order('id', { ascending: true })
+          .range(from, from + saleItemsPageSize - 1)
+        if (error) throw error
+
+        for (const si of saleItems ?? []) {
+          const pid = si.product_id
+          if (!pid) continue
+          const saleDate = getJoinedSaleDate(si.sale)
+          if (!saleDate) continue
+          if (!lastSaleByProduct[pid] || saleDate > lastSaleByProduct[pid]) {
+            lastSaleByProduct[pid] = saleDate
+          }
+        }
+
+        if ((saleItems?.length ?? 0) < saleItemsPageSize) break
       }
+    } catch (error) {
+      console.error('Failed to load sale history for dead-stock analysis:', error)
+      toast('Unable to load dead-stock analysis. Please try again.', 'error')
+      deadStockError = true
     }
 
     // Find products with stock that have never been sold or last sold 1+ year ago
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const deadStockProducts: Array<{ name: string; category_name: string | null; lastSaleDate: string | null; stockCount: number; stockValue: number }> = []
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    for (const p of (products.data ?? []) as any[]) {
-      const invType = p.category?.inventory_type
-      const stock = invType === 'piece' ? Number(p.stock_count) : Number(p.stock_sqft)
-      if (stock <= 0) continue
-      const lastSale = lastSaleByProduct[p.id] ?? null
-      if (lastSale === null || lastSale < oneYearAgoStr) {
-        deadStockProducts.push({
-          name: p.name,
-          category_name: p.category?.name ?? 'Uncategorized',
-          lastSaleDate: lastSale,
-          stockCount: stock,
-          stockValue: Number(p.cost_price) * stock,
-        })
+    if (!deadStockError) {
+      for (const p of (products.data ?? []) as any[]) {
+        const invType = p.category?.inventory_type
+        const stock = invType === 'piece' ? Number(p.stock_count) : Number(p.stock_sqft)
+        if (stock <= 0) continue
+        const lastSale = lastSaleByProduct[p.id] ?? null
+        if (lastSale === null || lastSale < oneYearAgoStr) {
+          deadStockProducts.push({
+            name: p.name,
+            category_name: p.category?.name ?? 'Uncategorized',
+            lastSaleDate: lastSale,
+            stockCount: stock,
+            stockValue: Number(p.cost_price) * stock,
+          })
+        }
       }
     }
 
@@ -161,11 +190,12 @@ export function Dashboard() {
       recentSales: (recentSales.data ?? []).map((r: { id: string; invoice_number: string; customer_name: string; grand_total: number; sale_date: string; payment_status: string }) => ({ id: r.id, invoice_number: r.invoice_number, customer_name: r.customer_name ?? 'Walk-in', grand_total: Number(r.grand_total), sale_date: r.sale_date, payment_status: r.payment_status })),
       recentPurchases: (recentPurchases.data ?? []).map((r: any) => ({ id: r.id, invoice_number: r.invoice_number, supplier_name: r.supplier?.name ?? '-', total_amount: Number(r.total_amount), purchase_date: r.purchase_date })),
       categoryStats,
-      deadStockCount: deadStockProducts.length,
+      deadStockCount: deadStockError ? null : deadStockProducts.length,
       deadStockProducts,
+      deadStockError,
     })
     setLoading(false)
-  }, [])
+  }, [toast])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -1039,7 +1069,15 @@ export function Dashboard() {
       </div>
 
       {/* Dead Stock Alert */}
-      {data.deadStockCount > 0 && (
+      {data.deadStockError ? (
+        <div className="dead-stock-banner" role="alert" style={{ marginTop: 18, marginBottom: 4 }}>
+          <div className="ds-icon"><AlertOctagon /></div>
+          <div className="ds-body">
+            <div className="ds-title">Dead-stock analysis unavailable</div>
+            <div className="ds-sub">Sale history could not be loaded. Try refreshing the dashboard.</div>
+          </div>
+        </div>
+      ) : data.deadStockCount !== null && data.deadStockCount > 0 && (
         <>
           <div className="dead-stock-banner" style={{ marginTop: 18, marginBottom: 4 }}>
             <div className="ds-icon"><AlertOctagon /></div>
